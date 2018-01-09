@@ -1,0 +1,208 @@
+#!/bin/bash
+
+DEFAULT_FS_TYPE=${FS_TYPE:-btrfs}
+
+STORAGE_FS_TYPE=ext4
+LSTORAGE_FS_TYPE=ext4
+
+REBOOT_ON_FORMAT=true
+
+partition_drives_gerrit() {
+    echo -en ",,L,-\n" | sfdisk $DISK_NAME_1
+
+    partprobe || true
+}
+
+use_swap() {
+    local part_dev=$1
+
+    local priority=0
+    local blockdev=$(dirname $(find -L /sys/block -maxdepth 2 -name $(echo $part_dev | sed 's#/dev/##')))
+
+    if [ -z "$blockdev" ]; then
+        echo "Unable to find device for $part_dev"
+        return 1
+    fi
+
+    if [[ "$(cat ${blockdev}/queue/rotational)" == "0" ]]; then
+        # SSD
+        priority=10
+    fi
+
+    # Keep existing label if it contains 'swap'
+    local label=$(blkid -s LABEL -o value $part_dev)
+    local label_opt=""
+    if [ -n "$label" ]; then
+        if echo $label | grep swap; then
+            label_opt=-L
+        else
+            label=""
+        fi
+    fi
+
+    mkswap $label_opt $label -f $part_dev
+    if [ $? -ne 0 ]; then
+        echo "Error formatting $part_dev"
+        return 1
+    fi
+
+    swapon --priority $priority $part_dev
+    if [ $? -ne 0 ]; then
+        echo "Error activating swap on $part_dev"
+        return 1
+    fi
+}
+
+use_swap_partitions() {
+    for part in $(blkid | grep swap | sed -r 's^(.*):.*^\1^g' | grep -v loop); do
+        use_swap $part
+    done
+}
+
+format_part() {
+    local part_name=$1
+    local part_dev=$2
+    local part_fs=${3:-$DEFAULT_FS_TYPE}
+
+    echo "Formatting $part_name = $part_dev ($part_fs)"
+    case $part_fs in
+        btrfs)
+            [ -e "/usr.squashfs (deleted)" ] || touch "/usr.squashfs (deleted)" # work around a bug in mkfs.btrfs 3.12
+            mkfs.btrfs -L ${part_name} -f ${part_dev}
+            ;;
+        xfs)
+            mkfs.xfs -L ${part_name} -f ${part_dev}
+            ;;
+        ext4)
+            mkfs.ext4 -L ${part_name} -F ${part_dev}
+            ;;
+        swap)
+            mkswap -L ${part_name} -f ${part_dev}
+            ;;
+        bind | zfs)
+            echo "Nothing to do for ${part_fs}"
+            ;;
+        *)
+            echo "Unknown fs '${part_fs}'"
+            exit 1
+            ;;
+    esac
+}
+
+format_drives() {
+    # Format swap partition
+    if [ -n "$SWAP_PART" ]; then
+        format_part "local-swap" ${SWAP_PART} swap
+    fi
+
+    # Format storage partition
+    if [ -n "$STORAGE_PART" ]; then
+        format_part "storage" ${STORAGE_PART} ${STORAGE_FS_TYPE}
+    fi
+
+    # Format local storage partition
+    if [ -n "$LSTORAGE_PART" ]; then
+        format_part "local-storage" ${LSTORAGE_PART} ${LSTORAGE_FS_TYPE}
+    fi
+
+    if $REBOOT_ON_FORMAT; then
+        reboot
+    fi
+}
+
+write_config() {
+    local part_env="/etc/part-environment"
+
+    rm -f "${part_env}.tmp"
+    touch "${part_env}.tmp"
+
+    [ -z "$SWAP_PART" ] || echo "SWAP_PART=${SWAP_PART}" >> "${part_env}.tmp"
+    [ -z "$STORAGE_PART" ] || echo "STORAGE_PART=${STORAGE_PART}" >> "${part_env}.tmp"
+    [ -z "$LSTORAGE_PART" ] || echo "LSTORAGE_PART=${LSTORAGE_PART}" >> "${part_env}.tmp"
+
+    rm -f "${part_env}"
+    mv "${part_env}.tmp" "${part_env}"
+}
+
+test_drives_gerrit() {
+    local format_required=false
+
+    test_drives_azure true
+
+    export DISK_NAME_1="/dev/sdc"
+    export LSTORAGE_PART="/dev/sdc1"
+
+    if ! blkid | grep "${LSTORAGE_PART}" | grep "local-storage"; then
+        format_required=true
+    fi
+
+    if [[ "$format_required" == "true" ]]; then
+        partition_drives_gerrit
+        format_drives
+    fi
+}
+
+test_drives() {
+    case "$MACHINE_TYPE" in
+        gerrit-*)
+            test_drives_gerrit
+            ;;
+        *)
+            ;;
+    esac
+
+    # Write part config
+    write_config
+}
+
+mount_local_storage() {
+    # Storage
+    if [ -n "$STORAGE_PART" ]; then
+        mkdir -p /storage
+        mount_part "storage" ${STORAGE_PART} /storage ${STORAGE_FS_TYPE}
+        chown 1000:1000 /storage
+    fi
+
+    # Local Storage
+    if [ -n "$LSTORAGE_PART" ]; then
+        mkdir -p /lstorage
+        mount_part "local-storage" ${STORAGE_PART} /storage ${STORAGE_FS_TYPE}
+        chown 1000:1000 /storage
+    fi
+}
+
+umount_local_storage() {
+    # Local Storage
+    if [ -n "$LSTORAGE_PART" ]; then
+        umount /lstorage
+    fi
+
+    # Storage
+    if [ -n "$STORAGE_PART" ]; then
+        umount /storage
+    fi
+}
+
+MACHINE_TYPE=${2:-gerrit-master}
+
+case "$1" in
+    start)
+        test_drives
+        update_disk_options
+        use_swap_partitions
+        mount_local_storage
+        ;;
+    stop)
+        umount_local_storage
+        ;;
+    restart)
+        $0 stop
+        $0 start
+        ;;
+    *)
+        echo "Usage: $0 {start|stop|restart} <machine type>"
+        exit 1
+        ;;
+esac
+
+exit 0

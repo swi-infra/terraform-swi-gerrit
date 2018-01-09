@@ -1,0 +1,97 @@
+#!/bin/bash -xe
+
+if [ -e "/etc/environment" ]; then
+    source /etc/environment
+fi
+
+if [ -e "/etc/farm-environment" ]; then
+    source /etc/farm-environment
+fi
+
+GERRIT_DOCKER_DEFAULT_IMAGE='quay.io/swi-infra/gerrit:2.15-nightly'
+GERRIT_DOCKER_IMAGE=${GERRIT_DOCKER_IMAGE:-$GERRIT_DOCKER_DEFAULT_IMAGE}
+
+if [ -z "$GERRIT_ROLE" ]; then
+    if [[ "$MACHINE_TYPE" == "gerrit-mirror" ]]; then
+        GERRIT_ROLE=mirror
+    else
+        GERRIT_ROLE=master
+    fi
+fi
+
+# Kill/remove existing container
+if docker inspect --type container gerrit; then
+    docker kill gerrit || true
+    docker rm --volumes gerrit || true
+fi
+
+docker pull ${GERRIT_DOCKER_IMAGE}
+
+# Create directory to store Gerrit files
+mkdir -p /lstorage/services/gerrit
+
+# Generate private keys used for Gerrit SSH server
+KEY_COMMENT="gerrit-code-review@$(hostname)"
+
+if ! [ -e /lstorage/services/gerrit/ssh_host_rsa_key ]; then
+    ssh-keygen -f /lstorage/services/gerrit/ssh_host_rsa_key -N '' -t 'rsa' -C $KEY_COMMENT
+fi
+
+if ! [ -e /lstorage/services/gerrit/ssh_host_dsa_key ]; then
+    ssh-keygen -f /lstorage/services/gerrit/ssh_host_dsa_key -N '' -t 'dsa' -C $KEY_COMMENT
+fi
+
+if ! [ -e /lstorage/services/gerrit/ssh_host_ecdsa_key ]; then
+    ssh-keygen -f /lstorage/services/gerrit/ssh_host_ecdsa_key -N '' -t 'ecdsa-sha2-nistp521' -C $KEY_COMMENT
+fi
+
+# Prepare configuration
+rm -rf /tmp/gerrit-environment
+touch /tmp/gerrit-environment
+
+set_env() {
+    local key=$1
+    local value=$2
+
+    echo "${key}=${value}" | tee -a /tmp/gerrit-environment
+}
+
+set_env JAVA_HEAPLIMIT "8g"
+
+DOCKER_RUN_ARGS="--publish 29418:29418"
+
+if [[ "$GERRIT_ROLE" == "master" ]]; then
+    echo "Role: Master"
+
+    if [ -z "$HOST_HOSTNAME" ]; then
+        # Use IP for URL
+        HOST_HOSTNAME="${COREOS_PRIVATE_IPV4}"
+    fi
+
+    set_env AUTH_TYPE "DEVELOPMENT_BECOME_ANY_ACCOUNT"
+    set_env WEBURL "http://${HOST_HOSTNAME}"
+
+    DOCKER_RUN_ARGS+=" --publish 80:8080"
+
+elif [[ "$GERRIT_ROLE" == "mirror" ]]; then
+    echo "Not supported at the moment"
+    exit 1
+
+else
+    echo "Unknown role '$GERRIT_ROLE'"
+    exit 1
+fi
+
+docker run \
+            --name gerrit \
+            --rm \
+            ${DOCKER_RUN_ARGS} \
+            --env-file /tmp/gerrit-environment \
+            --volume /lstorage/services/gerrit/ssh_host_rsa_key:/var/gerrit/ssh_host_rsa_key \
+            --volume /lstorage/services/gerrit/ssh_host_dsa_key:/var/gerrit/ssh_host_dsa_key \
+            --volume /lstorage/services/gerrit/ssh_host_ecdsa_key:/var/gerrit/ssh_host_ecdsa_key \
+            --volume /lstorage/services/gerrit/cache:/var/gerrit/review_site/cache \
+            --volume /lstorage/services/gerrit/index:/var/gerrit/review_site/index \
+            --volume /lstorage/git:/var/gerrit/review_site/git \
+            ${GERRIT_DOCKER_IMAGE}
+
