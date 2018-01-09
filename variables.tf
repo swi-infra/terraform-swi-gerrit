@@ -12,12 +12,12 @@ variable "master_vm_size" {
 
 variable "data_disk_size_gb" {
   description = "Size of the disk containing Gerrit data (instanciated for each VM)"
-  default = "512"
+  default = 512
 }
 
 variable "master_nb" {
   description = "Total number of node in the highly-available cluster (so far, only 2 supported)"
-  default = "2"
+  default = 2
 }
 
 variable "config_url" {
