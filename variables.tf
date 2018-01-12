@@ -25,14 +25,9 @@ variable "config_url" {
   default = "https://github.com/swi-infra/terraform-swi-gerrit.git"
 }
 
-variable "private_lb" {
-  description = "Number (0 or 1) of private load balancers"
-  default = 0
-}
-
-variable "public_lb" {
-  description = "Number (0 or 1) of private load balancers"
-  default = 1
+variable "is_public" {
+  description = "If true, load balancer is public, otherwise it is private"
+  default = true
 }
 
 ## Azure

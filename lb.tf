@@ -3,7 +3,7 @@
 ## Public
 
 resource "azurerm_public_ip" "public_ip" {
-  count                        = "${var.public_lb}"
+  count                        = "${var.is_public}"
   name                         = "${var.env_prefix}publicip"
   location                     = "${var.location}"
   resource_group_name          = "${var.resource_group}"
@@ -11,7 +11,7 @@ resource "azurerm_public_ip" "public_ip" {
 }
 
 resource "azurerm_lb" "loadbalancer_public" {
-  count               = "${var.public_lb}"
+  count               = "${var.is_public}"
   name                = "${var.env_prefix}loadbalancer"
   location            = "${var.location}"
   resource_group_name = "${var.resource_group}"
@@ -23,7 +23,7 @@ resource "azurerm_lb" "loadbalancer_public" {
 }
 
 resource "azurerm_lb_backend_address_pool" "loadbalancer_public_backend" {
-  count               = "${var.public_lb}"
+  count               = "${var.is_public}"
   name                = "${var.env_prefix}loadbalancer-backend"
   resource_group_name = "${var.resource_group}"
   loadbalancer_id     = "${azurerm_lb.loadbalancer_public.id}"
@@ -32,7 +32,7 @@ resource "azurerm_lb_backend_address_pool" "loadbalancer_public_backend" {
 ## Private
 
 resource "azurerm_lb" "loadbalancer_private" {
-  count               = "${1 - var.public_lb}"
+  count               = "${1 - var.is_public}"
   name                = "${var.env_prefix}loadbalancer"
   location            = "${var.location}"
   resource_group_name = "${var.resource_group}"
@@ -44,7 +44,7 @@ resource "azurerm_lb" "loadbalancer_private" {
 }
 
 resource "azurerm_lb_backend_address_pool" "loadbalancer_private_backend" {
-  count               = "${1 - var.public_lb}"
+  count               = "${1 - var.is_public}"
   name                = "${var.env_prefix}loadbalancer-backend"
   resource_group_name = "${var.resource_group}"
   loadbalancer_id     = "${azurerm_lb.loadbalancer_private.id}"
