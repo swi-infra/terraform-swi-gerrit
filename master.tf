@@ -18,6 +18,10 @@ resource "azurerm_network_interface" "master_nic" {
     name                          = "${var.env_prefix}master${count.index}-ipconfig"
     subnet_id                     = "${var.subnet_id}"
     private_ip_address_allocation = "Dynamic"
+    load_balancer_backend_address_pools_ids = [
+      "${element(concat(azurerm_lb_backend_address_pool.loadbalancer_public_backend.*.id,
+                        azurerm_lb_backend_address_pool.loadbalancer_private_backend.*.id), 0)}",
+    ]
   }
 }
 
@@ -31,6 +35,13 @@ resource "azurerm_managed_disk" "master_data" {
   disk_size_gb         = "${var.data_disk_size_gb}"
 }
 
+resource "azurerm_availability_set" "master_availability_set" {
+  name                 = "${var.env_prefix}master-availabilityset"
+  location             = "${var.location}"
+  resource_group_name  = "${var.resource_group}"
+  managed              = "true"
+}
+
 resource "azurerm_virtual_machine" "master" {
   count                 = "${var.master_nb}"
   name                  = "${var.env_prefix}master${count.index}"
@@ -38,6 +49,7 @@ resource "azurerm_virtual_machine" "master" {
   resource_group_name   = "${var.resource_group}"
   vm_size               = "${var.master_vm_size}"
   network_interface_ids = ["${azurerm_network_interface.master_nic.*.id[count.index]}"]
+  availability_set_id   = "${azurerm_availability_set.master_availability_set.id}"
   delete_os_disk_on_termination = true
 
   storage_image_reference {
