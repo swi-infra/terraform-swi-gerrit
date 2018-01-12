@@ -19,8 +19,8 @@ resource "azurerm_network_interface" "master_nic" {
     subnet_id                     = "${var.subnet_id}"
     private_ip_address_allocation = "Dynamic"
     load_balancer_backend_address_pools_ids = [
-      "${element(concat(azurerm_lb_backend_address_pool.loadbalancer_public_backend.*.id,
-                        azurerm_lb_backend_address_pool.loadbalancer_private_backend.*.id), 0)}",
+      "${element(concat(azurerm_lb_backend_address_pool.lb_public_backend.*.id,
+                        azurerm_lb_backend_address_pool.lb_private_backend.*.id), 0)}",
     ]
   }
 }
