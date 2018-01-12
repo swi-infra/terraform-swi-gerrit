@@ -7,6 +7,8 @@ LSTORAGE_FS_TYPE=ext4
 
 REBOOT_ON_FORMAT=true
 
+set -xe
+
 partition_drives_gerrit() {
     echo -en ",,L,-\n" | sfdisk $DISK_NAME_1
 
@@ -16,8 +18,16 @@ partition_drives_gerrit() {
 use_swap() {
     local part_dev=$1
 
+    [ -n "$part_dev" ] || exit 1
+
     local priority=0
     local blockdev=$(dirname $(find -L /sys/block -maxdepth 2 -name $(echo $part_dev | sed 's#/dev/##')))
+
+    if [ -z "$blockdev" ]; then
+        if [ -e "/sys/block/$(echo $part_dev | sed 's#/dev/##')" ]; then
+            blockdev=$(echo $part_dev | sed 's#/dev/##')
+        fi
+    fi
 
     if [ -z "$blockdev" ]; then
         echo "Unable to find device for $part_dev"
@@ -124,6 +134,33 @@ write_config() {
     mv "${part_env}.tmp" "${part_env}"
 }
 
+test_drives_azure() {
+    local resource_as_swap=${1:-true}
+
+    if [[ "$FARM_PLATFORM" != "cloud-azure" ]]; then
+        return 0
+    fi
+
+    if umount /mnt/resource; then
+        # Resource storage was mounted, so force format and reboot
+
+        # Force MBR erase
+        dd if=/dev/zero of=/dev/sdb count=10 bs=1M
+
+        # jbd2 keeps the partition busy, so we can't do much as this point and
+        # we need to reboot to actually free it
+        reboot
+    fi
+
+    # Use temp storage as swap
+    if [[ "$resource_as_swap" == "true" ]]; then
+        export DISK_NAME_2="/dev/sdb"
+        export SWAP_PART="/dev/sdb"
+
+        format_part "local-swap" ${SWAP_PART} swap
+    fi
+}
+
 test_drives_gerrit() {
     local format_required=false
 
@@ -155,6 +192,40 @@ test_drives() {
     write_config
 }
 
+mount_part() {
+    local part_name=$1
+    local part_dev=$2
+    local part_mountpoint=$3
+    local part_fs=${4:-$DEFAULT_FS_TYPE}
+    local part_opt=$5
+
+    local type_arg=-t
+
+    echo "Mounting $part_name = $part_dev ($part_fs)"
+    case $part_fs in
+        btrfs)
+            [ -n "$part_opt" ] || part_opt="rw,noatime"
+            ;;
+        ext4)
+            [ -n "$part_opt" ] || part_opt="rw,noatime"
+            ;;
+        tmpfs)
+            [ -n "$part_opt" ] || part_opt="size=128g"
+            ;;
+        bind | zfs)
+            part_opt="bind"
+            type_arg=""
+            part_fs=""
+            ;;
+        *)
+            echo "Unknown fs '$part_fs'"
+            exit 1
+            ;;
+    esac
+
+    mount ${part_dev} ${part_mountpoint} ${type_arg} ${part_fs} -o ${part_opt}
+}
+
 mount_local_storage() {
     # Storage
     if [ -n "$STORAGE_PART" ]; then
@@ -166,8 +237,8 @@ mount_local_storage() {
     # Local Storage
     if [ -n "$LSTORAGE_PART" ]; then
         mkdir -p /lstorage
-        mount_part "local-storage" ${STORAGE_PART} /storage ${STORAGE_FS_TYPE}
-        chown 1000:1000 /storage
+        mount_part "local-storage" ${LSTORAGE_PART} /lstorage ${LSTORAGE_FS_TYPE}
+        chown 1000:1000 /lstorage
     fi
 }
 
@@ -188,7 +259,6 @@ MACHINE_TYPE=${2:-gerrit-master}
 case "$1" in
     start)
         test_drives
-        update_disk_options
         use_swap_partitions
         mount_local_storage
         ;;
