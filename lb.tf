@@ -22,6 +22,14 @@ resource "azurerm_lb" "lb_public" {
   }
 }
 
+resource "azurerm_lb_probe" "lb_public_probe_http" {
+  count               = "${var.is_public}"
+  name                = "${var.env_prefix}loadbalancer-probe-http"
+  resource_group_name = "${var.resource_group}"
+  loadbalancer_id     = "${azurerm_lb.lb_public.id}"
+  port                = 80
+}
+
 resource "azurerm_lb_backend_address_pool" "lb_public_backend" {
   count               = "${var.is_public}"
   name                = "${var.env_prefix}loadbalancer-backend"
@@ -34,10 +42,12 @@ resource "azurerm_lb_rule" "lb_public_http" {
   resource_group_name            = "${var.resource_group}"
   loadbalancer_id                = "${azurerm_lb.lb_public.id}"
   name                           = "${var.env_prefix}loadbalancer-rule-http"
+  probe_id                       = "${azurerm_lb_probe.lb_public_probe_http.id}"
+  frontend_ip_configuration_name = "${var.env_prefix}mainip"
+  backend_address_pool_id        = "${azurerm_lb_backend_address_pool.lb_public_backend.id}"
   protocol                       = "Tcp"
   frontend_port                  = 80
   backend_port                   = 80
-  frontend_ip_configuration_name = "${var.env_prefix}mainip"
 }
 
 resource "azurerm_lb_rule" "lb_public_https" {
@@ -45,10 +55,12 @@ resource "azurerm_lb_rule" "lb_public_https" {
   resource_group_name            = "${var.resource_group}"
   loadbalancer_id                = "${azurerm_lb.lb_public.id}"
   name                           = "${var.env_prefix}loadbalancer-rule-https"
+  probe_id                       = "${azurerm_lb_probe.lb_public_probe_http.id}"
+  frontend_ip_configuration_name = "${var.env_prefix}mainip"
+  backend_address_pool_id        = "${azurerm_lb_backend_address_pool.lb_public_backend.id}"
   protocol                       = "Tcp"
   frontend_port                  = 443
   backend_port                   = 443
-  frontend_ip_configuration_name = "${var.env_prefix}mainip"
 }
 
 resource "azurerm_lb_rule" "lb_public_ssl" {
@@ -56,10 +68,12 @@ resource "azurerm_lb_rule" "lb_public_ssl" {
   resource_group_name            = "${var.resource_group}"
   loadbalancer_id                = "${azurerm_lb.lb_public.id}"
   name                           = "${var.env_prefix}loadbalancer-rule-ssl"
+  probe_id                       = "${azurerm_lb_probe.lb_public_probe_http.id}"
+  frontend_ip_configuration_name = "${var.env_prefix}mainip"
+  backend_address_pool_id        = "${azurerm_lb_backend_address_pool.lb_public_backend.id}"
   protocol                       = "Tcp"
   frontend_port                  = 29418
   backend_port                   = 29418
-  frontend_ip_configuration_name = "${var.env_prefix}mainip"
 }
 
 ## Private
@@ -76,6 +90,14 @@ resource "azurerm_lb" "lb_private" {
   }
 }
 
+resource "azurerm_lb_probe" "lb_private_probe_http" {
+  count               = "${1 - var.is_public}"
+  name                = "${var.env_prefix}loadbalancer-probe-http"
+  resource_group_name = "${var.resource_group}"
+  loadbalancer_id     = "${azurerm_lb.lb_private.id}"
+  port                = 80
+}
+
 resource "azurerm_lb_backend_address_pool" "lb_private_backend" {
   count               = "${1 - var.is_public}"
   name                = "${var.env_prefix}loadbalancer-backend"
@@ -88,10 +110,12 @@ resource "azurerm_lb_rule" "lb_private_http" {
   resource_group_name            = "${var.resource_group}"
   loadbalancer_id                = "${azurerm_lb.lb_private.id}"
   name                           = "${var.env_prefix}loadbalancer-rule-http"
+  probe_id                       = "${azurerm_lb_probe.lb_private_probe_http.id}"
+  frontend_ip_configuration_name = "${var.env_prefix}mainip"
+  backend_address_pool_id        = "${azurerm_lb_backend_address_pool.lb_private_backend.id}"
   protocol                       = "Tcp"
   frontend_port                  = 80
   backend_port                   = 80
-  frontend_ip_configuration_name = "${var.env_prefix}mainip"
 }
 
 resource "azurerm_lb_rule" "lb_private_https" {
@@ -99,10 +123,12 @@ resource "azurerm_lb_rule" "lb_private_https" {
   resource_group_name            = "${var.resource_group}"
   loadbalancer_id                = "${azurerm_lb.lb_private.id}"
   name                           = "${var.env_prefix}loadbalancer-rule-https"
+  probe_id                       = "${azurerm_lb_probe.lb_private_probe_http.id}"
+  frontend_ip_configuration_name = "${var.env_prefix}mainip"
+  backend_address_pool_id        = "${azurerm_lb_backend_address_pool.lb_private_backend.id}"
   protocol                       = "Tcp"
   frontend_port                  = 443
   backend_port                   = 443
-  frontend_ip_configuration_name = "${var.env_prefix}mainip"
 }
 
 resource "azurerm_lb_rule" "lb_private_ssl" {
@@ -110,9 +136,11 @@ resource "azurerm_lb_rule" "lb_private_ssl" {
   resource_group_name            = "${var.resource_group}"
   loadbalancer_id                = "${azurerm_lb.lb_private.id}"
   name                           = "${var.env_prefix}loadbalancer-rule-ssl"
+  probe_id                       = "${azurerm_lb_probe.lb_private_probe_http.id}"
+  frontend_ip_configuration_name = "${var.env_prefix}mainip"
+  backend_address_pool_id        = "${azurerm_lb_backend_address_pool.lb_private_backend.id}"
   protocol                       = "Tcp"
   frontend_port                  = 29418
   backend_port                   = 29418
-  frontend_ip_configuration_name = "${var.env_prefix}mainip"
 }
 
