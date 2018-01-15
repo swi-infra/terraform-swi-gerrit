@@ -1,0 +1,63 @@
+#!/bin/bash -xe
+
+if [ -e "/etc/farm-environment" ]; then
+    source /etc/farm-environment
+fi
+
+# Temporary workaround
+create_stub() {
+    mkdir -p /storage
+    mount --bind /lstorage /storage
+}
+
+init_cluster() {
+    docker exec -ti glusterfs gluster volume create gv0 replica $NB_MASTER :/data server2:/data
+    docker exec -ti glusterfs gluster volume start gv0
+}
+
+start_glusterfs() {
+    local need_init=false
+
+    if [ ! -e "/lstorage/services/glusterfs/etc" ]; then
+        need_init=true
+    fi
+
+    docker run \
+                -v /lstorage/services/glusterfs/etc:/etc/glusterfs:z \
+                -v /lstorage/services/glusterfs/lib:/var/lib/glusterd:z \
+                -v /lstorage/services/glusterfs/logs:/var/log/glusterfs:z \
+                -v /lstorage/services/glusterfs/data:/data \
+                -v /sys/fs/cgroup:/sys/fs/cgroup:ro \
+                -v /dev:/dev \
+                -d \
+                --privileged=true \
+                --net=host \
+                --name glusterfs \
+                gluster/gluster-centos
+
+    sleep 30
+
+    if $need_init; then
+        init_cluster
+    fi
+}
+
+case "$1" in
+    start)
+        create_stub
+        #start_glusterfs
+        ;;
+    stop)
+        ;;
+    restart)
+        $0 stop
+        $0 start
+        ;;
+    *)
+        echo "Usage: $0 {start|stop|restart} <machine type>"
+        exit 1
+        ;;
+esac
+
+exit 0
+

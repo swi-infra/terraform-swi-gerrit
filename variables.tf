@@ -17,7 +17,7 @@ variable "data_disk_size_gb" {
 
 variable "master_nb" {
   description = "Total number of node in the highly-available cluster (so far, only 2 supported)"
-  default = 2
+  default = 1
 }
 
 variable "config_url" {

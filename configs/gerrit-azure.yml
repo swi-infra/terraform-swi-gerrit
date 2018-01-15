@@ -34,13 +34,27 @@ coreos:
         ExecStart=/tmp/tf-module/scripts/disk-mgmt start $${MACHINE_TYPE}
         ExecStop=/tmp/tf-module/scripts/disk-mgmt stop $${MACHINE_TYPE}
         TimeoutStartSec=0
+    - name: glusterfs.service
+      command: start
+      content: |
+        [Unit]
+        Description=Shared storage
+        Requires=scripts.service data-storage.service
+        After=scripts.service data-storage.service
+
+        [Service]
+        Type=oneshot
+        RemainAfterExit=yes
+        ExecStart=/tmp/tf-module/scripts/glusterfs-mgmt start
+        ExecStop=/tmp/tf-module/scripts/glusterfs-mgmt stop
+        TimeoutStartSec=0
     - name: git-daemon.service
       command: start
       content: |
         [Unit]
         Description=Git Daemon
-        After=docker.service data-storage.service
-        Requires=docker.service data-storage.service
+        After=docker.service data-storage.service glusterfs.service
+        Requires=docker.service data-storage.service glusterfs.service
 
         [Service]
         ExecStartPre=-/usr/bin/docker kill %p
@@ -62,8 +76,8 @@ coreos:
       content: |
         [Unit]
         Description=Gerrit
-        After=docker.service data-storage.service
-        Requires=docker.service data-storage.service
+        After=docker.service data-storage.service glusterfs.service
+        Requires=docker.service data-storage.service glusterfs.service
 
         [Service]
         ExecStart=/tmp/tf-module/scripts/gerrit-mgmt start

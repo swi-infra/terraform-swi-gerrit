@@ -6,5 +6,5 @@ output "master.ips" {
 
 output "external.ip" {
   value = "${element(concat(azurerm_public_ip.public_ip.*.ip_address,
-                            azurerm_lb.lb_private.*.private_ip_address), 0)}",
+                            azurerm_lb.lb_private.*.private_ip_address), 0)}"
 }

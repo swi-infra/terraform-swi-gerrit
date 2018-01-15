@@ -5,6 +5,8 @@ data "template_file" "master_config" {
 
   vars {
     config_url = "${var.config_url}"
+    master_nb = "${var.master_nb}"
+    master_ips = "${element(concat(azurerm_network_interface.master_nic.*.private_ip_address), 0)}"
   }
 }
 
