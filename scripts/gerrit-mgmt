@@ -71,6 +71,8 @@ if [[ "$GERRIT_ROLE" == "master" ]]; then
     set_env AUTH_TYPE "DEVELOPMENT_BECOME_ANY_ACCOUNT"
     set_env WEBURL "http://${HOST_HOSTNAME}"
 
+    set_env GET_PLUGINS "high-availability,avatars-gravatar:master-master"
+
     DOCKER_RUN_ARGS+=" --publish 80:8080"
 
 elif [[ "$GERRIT_ROLE" == "mirror" ]]; then
