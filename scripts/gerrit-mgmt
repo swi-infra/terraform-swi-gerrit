@@ -66,14 +66,14 @@ if [[ "$GERRIT_ROLE" == "master" ]]; then
     if [ -z "$HOST_HOSTNAME" ]; then
         # Use IP for URL
         HOST_HOSTNAME="${COREOS_PRIVATE_IPV4}"
+    else
+        set_env VIRTUAL_HOST "${HOST_HOSTNAME}"
+        set_env VIRTUAL_PORT "8080"
     fi
 
-    set_env AUTH_TYPE "DEVELOPMENT_BECOME_ANY_ACCOUNT"
     set_env WEBURL "http://${HOST_HOSTNAME}"
 
     set_env GET_PLUGINS "high-availability,avatars-gravatar:master-master"
-
-    DOCKER_RUN_ARGS+=" --publish 80:8080"
 
 elif [[ "$GERRIT_ROLE" == "mirror" ]]; then
     echo "Not supported at the moment"
@@ -96,4 +96,3 @@ docker run \
             --volume /lstorage/services/gerrit/index:/var/gerrit/review_site/index \
             --volume /lstorage/git:/var/gerrit/review_site/git \
             ${GERRIT_DOCKER_IMAGE}
-

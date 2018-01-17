@@ -86,6 +86,21 @@ coreos:
         RestartSec=10s
         TimeoutStartSec=0
         TimeoutStopSec=15
+    - name: proxy.service
+      command: start
+      content: |
+        [Unit]
+        Description=HTTPS proxy
+        After=docker.service data-storage.service glusterfs.service
+        Requires=docker.service data-storage.service glusterfs.service
+
+        [Service]
+        ExecStart=/tmp/tf-module/scripts/proxy-mgmt start
+        ExecStop=/tmp/tf-module/scripts/proxy-mgmt stop
+        Restart=always
+        RestartSec=10s
+        TimeoutStartSec=0
+        TimeoutStopSec=15
 
   update:
     group: stable
