@@ -1,4 +1,4 @@
-## Gerrit
+## Gerrit infra
 
 variable "env_prefix" {
   description = "Prefix for resource names"
@@ -28,6 +28,10 @@ variable "config_url" {
 variable "is_public" {
   description = "If true, load balancer is public, otherwise it is private"
   default = true
+}
+
+variable "gerrit_hostname" {
+  description = "Hostname used to access the service"
 }
 
 ## Azure
@@ -87,5 +91,20 @@ variable "admin_username" {
 variable "admin_ssh_key" {
   description = "administrator ssh key"
   default     = "ssh-rsa AAAAB3NzaC1yc2EAAAABIwAAAQEAy4b4mjWHuN8Ckb9RL7/JQloGSwo5AQQTi2XgLJb1SOZSYggTro4GJbLi42+sUieCxNBWanpuUTuSdde7bcreSSp/S1m3ldtYeA/L+wfQErKsbJwhMtCWU2oU9WZKPUXkYVCPhe9dLnAbGc792RwFrsJTtWudqNC9dLqNuSAvZWiYuMzurWit1uyvFcR6eyNNSRa73riA5c//LHOA9PmRZup3QZUDfDJ8+buLzXfXfG9dzB0s9KAhNBZFYJb4UvpF2Vb2ArIZ2la9XNKIcMrSviLJCKn3tJh7CUyg4WwwdSZWMuBuYAcYbJDsmBskHfO22CATjqCfprm/LnceIzK6bw=="
+}
+
+## Gerrit env
+
+variable "gerrit_auth_type" {
+  description = "Gerrit authentication type"
+  default     = "OpenID_SSO"
+}
+
+variable "gerrit_oauth_github_client_id" {
+  description = "GitHub client id"
+}
+
+variable "gerrit_oauth_github_client_secret" {
+  description = "GitHub client secret"
 }
 

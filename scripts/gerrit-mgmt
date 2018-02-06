@@ -47,7 +47,11 @@ fi
 
 # Prepare configuration
 rm -rf /tmp/gerrit-environment
-touch /tmp/gerrit-environment
+if [ -e "/etc/gerrit-environment" ]; then
+    cp /etc/gerrit-environment /tmp/gerrit-environment
+else
+    touch /tmp/gerrit-environment
+fi
 
 set_env() {
     local key=$1
@@ -69,6 +73,8 @@ if [[ "$GERRIT_ROLE" == "master" ]]; then
     else
         set_env VIRTUAL_HOST "${HOST_HOSTNAME}"
         set_env VIRTUAL_PORT "8080"
+
+        set_env LETSENCRYPT_HOST "${HOST_HOSTNAME}"
     fi
 
     set_env WEBURL "http://${HOST_HOSTNAME}"
@@ -96,3 +102,4 @@ docker run \
             --volume /lstorage/services/gerrit/index:/var/gerrit/review_site/index \
             --volume /lstorage/git:/var/gerrit/review_site/git \
             ${GERRIT_DOCKER_IMAGE}
+

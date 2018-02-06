@@ -7,6 +7,10 @@ data "template_file" "master_config" {
     config_url = "${var.config_url}"
     master_nb = "${var.master_nb}"
     master_ips = "${element(concat(azurerm_network_interface.master_nic.*.private_ip_address), 0)}"
+    gerrit_hostname = "${var.gerrit_hostname}"
+    gerrit_auth_type = "${var.gerrit_auth_type}"
+    gerrit_oauth_github_client_id = "${var.gerrit_oauth_github_client_id}"
+    gerrit_oauth_github_client_secret = "${var.gerrit_oauth_github_client_secret}"
   }
 }
 

@@ -86,17 +86,32 @@ coreos:
         RestartSec=10s
         TimeoutStartSec=0
         TimeoutStopSec=15
-    - name: proxy.service
+    - name: nginx-proxy.service
       command: start
       content: |
         [Unit]
-        Description=HTTPS proxy
+        Description=Nginx proxy
         After=docker.service data-storage.service glusterfs.service
         Requires=docker.service data-storage.service glusterfs.service
 
         [Service]
-        ExecStart=/tmp/tf-module/scripts/proxy-mgmt start
-        ExecStop=/tmp/tf-module/scripts/proxy-mgmt stop
+        ExecStart=/tmp/tf-module/scripts/proxy-mgmt start nginx-proxy
+        ExecStop=/tmp/tf-module/scripts/proxy-mgmt stop nginx-proxy
+        Restart=always
+        RestartSec=10s
+        TimeoutStartSec=0
+        TimeoutStopSec=15
+    - name: letsencrypt.service
+      command: start
+      content: |
+        [Unit]
+        Description=Let's encrypt (HTTPS)
+        After=docker.service data-storage.service glusterfs.service nginx-proxy.service
+        Requires=docker.service data-storage.service glusterfs.service nginx-proxy.service
+
+        [Service]
+        ExecStart=/tmp/tf-module/scripts/proxy-mgmt start letsencrypt
+        ExecStop=/tmp/tf-module/scripts/proxy-mgmt stop letsencrypt
         Restart=always
         RestartSec=10s
         TimeoutStartSec=0
@@ -120,4 +135,11 @@ write_files:
       MACHINE_TYPE=gerrit-master
       FARM_PLATFORM=cloud-azure
       CONFIG_URL=${config_url}
-
+      HOST_HOSTNAME=${gerrit_hostname}
+  - path: /etc/gerrit-environment
+    permissions: 0644
+    owner: root
+    content: |
+      AUTH_TYPE=${gerrit_auth_type}
+      OAUTH_GITHUB_CLIENT_ID=${gerrit_oauth_github_client_id}
+      OAUTH_GITHUB_CLIENT_SECRET=${gerrit_oauth_github_client_secret}

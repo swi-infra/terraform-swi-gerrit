@@ -1,27 +1,63 @@
 #!/bin/bash -xe
 
-docker pull jwilder/nginx-proxy
-docker pull jrcs/letsencrypt-nginx-proxy-companion
+SERVICE=$2
+if [ -z "$SERVICE" ]; then
+    echo "Service name must be provided"
+    exit 1
+fi
 
-docker run \
-            --name nginx-proxy \
-            --rm \
-            -p 80:80 \
-            -p 443:443 \
-            --volume /lstorage/services/nginx/certs:/etc/nginx/certs:ro \
-            --volume /lstorage/services/nginx/vhost.d:/etc/nginx/vhost.d \
-            --volume /lstorage/services/nginx/share:/usr/share/nginx/html \
-            --volume /var/run/docker.sock:/tmp/docker.sock:ro \
-            --label com.github.jrcs.letsencrypt_nginx_proxy_companion.nginx_proxy \
-            jwilder/nginx-proxy &
+start_service() {
+    local service=$1
 
-sleep 10
+    docker rm -f "$service"
 
-docker run \
-            --name letsencrypt \
-            --rm \
-            --volume /lstorage/services/nginx/certs:/etc/nginx/certs:rw \
-            --volume /var/run/docker.sock:/var/run/docker.sock:ro \
-            --volumes-from nginx-proxy \
-            jrcs/letsencrypt-nginx-proxy-companion
+    if [[ "$service" == "nginx-proxy" ]]; then
+        docker pull jwilder/nginx-proxy
+
+        docker run \
+                    --name $SERVICE \
+                    -d \
+                    -p 80:80 \
+                    -p 443:443 \
+                    --volume /lstorage/services/nginx/certs:/etc/nginx/certs:ro \
+                    --volume /lstorage/services/nginx/vhost.d:/etc/nginx/vhost.d \
+                    --volume /lstorage/services/nginx/share:/usr/share/nginx/html \
+                    --volume /var/run/docker.sock:/tmp/docker.sock:ro \
+                    --label com.github.jrcs.letsencrypt_nginx_proxy_companion.nginx_proxy \
+                    jwilder/nginx-proxy
+
+    elif [[ "$service" == "letsencrypt" ]]; then
+
+        docker pull jrcs/letsencrypt-nginx-proxy-companion
+
+        docker run \
+                    --name $SERVICE \
+                    --rm \
+                    --volume /lstorage/services/nginx/certs:/etc/nginx/certs:rw \
+                    --volume /var/run/docker.sock:/var/run/docker.sock:ro \
+                    --volumes-from nginx-proxy \
+                    jrcs/letsencrypt-nginx-proxy-companion
+    else
+        exit 1
+    fi
+}
+
+case "$1" in
+    start)
+        start_service $SERVICE
+        ;;
+    stop)
+        docker kill $SERVICE
+        ;;
+    restart)
+        $0 stop
+        $0 start
+        ;;
+    *)
+        echo "Usage: $0 {start|stop|restart} <machine type>"
+        exit 1
+        ;;
+esac
+
+exit 0
 
