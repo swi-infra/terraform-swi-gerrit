@@ -9,14 +9,14 @@ fi
 start_service() {
     local service=$1
 
-    docker rm -f "$service"
+    docker rm -f "$service" || true
 
     if [[ "$service" == "nginx-proxy" ]]; then
         docker pull jwilder/nginx-proxy
 
         docker run \
                     --name $SERVICE \
-                    -d \
+                    --rm \
                     -p 80:80 \
                     -p 443:443 \
                     --volume /lstorage/services/nginx/certs:/etc/nginx/certs:ro \
