@@ -77,7 +77,8 @@ if [[ "$GERRIT_ROLE" == "master" ]]; then
         set_env LETSENCRYPT_HOST "${HOST_HOSTNAME}"
     fi
 
-    set_env WEBURL "http://${HOST_HOSTNAME}"
+    set_env WEBURL "https://${HOST_HOSTNAME}"
+    set_env HTTPD_LISTENURL "proxy-https://*:8080"
 
     set_env GET_PLUGINS "high-availability,avatars-gravatar:master-master"
 
