@@ -61,6 +61,7 @@ resource "azurerm_lb_rule" "lb_public_https" {
   protocol                       = "Tcp"
   frontend_port                  = 443
   backend_port                   = 443
+  idle_timeout_in_minutes        = 30
 }
 
 resource "azurerm_lb_rule" "lb_public_ssl" {
@@ -74,6 +75,7 @@ resource "azurerm_lb_rule" "lb_public_ssl" {
   protocol                       = "Tcp"
   frontend_port                  = 29418
   backend_port                   = 29418
+  idle_timeout_in_minutes        = 30
 }
 
 ## Private
