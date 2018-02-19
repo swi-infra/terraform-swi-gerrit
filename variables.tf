@@ -100,11 +100,63 @@ variable "gerrit_auth_type" {
   default     = "OpenID_SSO"
 }
 
+# GitHub
+
 variable "gerrit_oauth_github_client_id" {
   description = "GitHub client id"
+  default     = ""
 }
 
 variable "gerrit_oauth_github_client_secret" {
   description = "GitHub client secret"
+  default     = ""
+}
+
+# Office365
+
+variable "gerrit_oauth_office365_client_id" {
+  description = "Office365 client id"
+  default     = ""
+}
+
+variable "gerrit_oauth_office365_client_secret" {
+  description = "Office365 client secret"
+  default     = ""
+}
+
+# Google
+
+variable "gerrit_oauth_google_client_id" {
+  description = "Google client id"
+  default     = ""
+}
+
+variable "gerrit_oauth_google_client_secret" {
+  description = "Google client secret"
+  default     = ""
+}
+
+# BitBucket
+
+variable "gerrit_oauth_bitbucket_client_id" {
+  description = "BitBucket client id"
+  default     = ""
+}
+
+variable "gerrit_oauth_bitbucket_client_secret" {
+  description = "BitBucket client secret"
+  default     = ""
+}
+
+# GitLab
+
+variable "gerrit_oauth_gitlab_client_id" {
+  description = "GitLab client id"
+  default     = ""
+}
+
+variable "gerrit_oauth_gitlab_client_secret" {
+  description = "GitLab client secret"
+  default     = ""
 }
 

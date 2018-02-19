@@ -11,6 +11,14 @@ data "template_file" "master_config" {
     gerrit_auth_type = "${var.gerrit_auth_type}"
     gerrit_oauth_github_client_id = "${var.gerrit_oauth_github_client_id}"
     gerrit_oauth_github_client_secret = "${var.gerrit_oauth_github_client_secret}"
+    gerrit_oauth_office365_client_id = "${var.gerrit_oauth_office365_client_id}"
+    gerrit_oauth_office365_client_secret = "${var.gerrit_oauth_office365_client_secret}"
+    gerrit_oauth_google_client_id = "${var.gerrit_oauth_google_client_id}"
+    gerrit_oauth_google_client_secret = "${var.gerrit_oauth_google_client_secret}"
+    gerrit_oauth_bitbucket_client_id = "${var.gerrit_oauth_bitbucket_client_id}"
+    gerrit_oauth_bitbucket_client_secret = "${var.gerrit_oauth_bitbucket_client_secret}"
+    gerrit_oauth_gitlab_client_id = "${var.gerrit_oauth_gitlab_client_id}"
+    gerrit_oauth_gitlab_client_secret = "${var.gerrit_oauth_gitlab_client_secret}"
   }
 }
 
