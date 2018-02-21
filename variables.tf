@@ -95,6 +95,11 @@ variable "admin_ssh_key" {
 
 ## Gerrit env
 
+variable "gerrit_ui" {
+  description = "Gerrit UI default type"
+  default     = "POLYGERRIT"
+}
+
 variable "gerrit_auth_type" {
   description = "Gerrit authentication type"
   default     = "OpenID_SSO"
