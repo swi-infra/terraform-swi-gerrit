@@ -64,11 +64,11 @@ resource "azurerm_lb_rule" "lb_public_https" {
   idle_timeout_in_minutes        = 30
 }
 
-resource "azurerm_lb_rule" "lb_public_ssl" {
+resource "azurerm_lb_rule" "lb_public_ssh" {
   count                          = "${var.is_public}"
   resource_group_name            = "${var.resource_group}"
   loadbalancer_id                = "${azurerm_lb.lb_public.id}"
-  name                           = "${var.env_prefix}loadbalancer-rule-ssl"
+  name                           = "${var.env_prefix}loadbalancer-rule-ssh"
   probe_id                       = "${azurerm_lb_probe.lb_public_probe_http.id}"
   frontend_ip_configuration_name = "${var.env_prefix}mainip"
   backend_address_pool_id        = "${azurerm_lb_backend_address_pool.lb_public_backend.id}"
@@ -133,11 +133,11 @@ resource "azurerm_lb_rule" "lb_private_https" {
   backend_port                   = 443
 }
 
-resource "azurerm_lb_rule" "lb_private_ssl" {
+resource "azurerm_lb_rule" "lb_private_ssh" {
   count                          = "${1 - var.is_public}"
   resource_group_name            = "${var.resource_group}"
   loadbalancer_id                = "${azurerm_lb.lb_private.id}"
-  name                           = "${var.env_prefix}loadbalancer-rule-ssl"
+  name                           = "${var.env_prefix}loadbalancer-rule-ssh"
   probe_id                       = "${azurerm_lb_probe.lb_private_probe_http.id}"
   frontend_ip_configuration_name = "${var.env_prefix}mainip"
   backend_address_pool_id        = "${azurerm_lb_backend_address_pool.lb_private_backend.id}"

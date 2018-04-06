@@ -20,6 +20,11 @@ variable "master_nb" {
   default = 1
 }
 
+variable "dev_vm" {
+  description = "Provide a dev VM that gives access to the internal network"
+  default = false
+}
+
 variable "config_url" {
   description = "Repository URL for this git module"
   default = "https://github.com/swi-infra/terraform-swi-gerrit.git"
