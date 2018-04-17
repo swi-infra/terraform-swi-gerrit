@@ -117,10 +117,6 @@ coreos:
         TimeoutStartSec=0
         TimeoutStopSec=15
 
-  update:
-    group: stable
-    reboot-strategy: off
-
 write_files:
   - path: /etc/waagent.conf
     permissions: 0644

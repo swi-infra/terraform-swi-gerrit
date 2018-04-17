@@ -33,9 +33,10 @@ resource "azurerm_network_interface" "master_nic" {
     name                          = "${var.env_prefix}master${count.index}-ipconfig"
     subnet_id                     = "${var.subnet_id}"
     private_ip_address_allocation = "Dynamic"
+    public_ip_address_id = "${var.load_balancer ? "" : (var.is_public ? azurerm_public_ip.public_ip.id : "")}"
     load_balancer_backend_address_pools_ids = [
-      "${element(concat(azurerm_lb_backend_address_pool.lb_public_backend.*.id,
-                        azurerm_lb_backend_address_pool.lb_private_backend.*.id), 0)}",
+      "${coalescelist(azurerm_lb_backend_address_pool.lb_public_backend.*.id,
+                      azurerm_lb_backend_address_pool.lb_private_backend.*.id)}",
     ]
   }
 }

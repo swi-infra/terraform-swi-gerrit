@@ -8,7 +8,7 @@ if [ -e "/etc/farm-environment" ]; then
     source /etc/farm-environment
 fi
 
-GERRIT_DOCKER_DEFAULT_IMAGE='quay.io/swi-infra/gerrit:2.15-nightly'
+GERRIT_DOCKER_DEFAULT_IMAGE='quay.io/swi-infra/gerrit:latest'
 GERRIT_DOCKER_IMAGE=${GERRIT_DOCKER_IMAGE:-$GERRIT_DOCKER_DEFAULT_IMAGE}
 
 if [ -z "$GERRIT_ROLE" ]; then

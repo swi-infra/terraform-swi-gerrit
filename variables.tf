@@ -15,6 +15,11 @@ variable "data_disk_size_gb" {
   default = 512
 }
 
+variable "load_balancer" {
+  description = "Provide a load balancer between master VM(s) and external interface or not"
+  default = true
+}
+
 variable "master_nb" {
   description = "Total number of node in the highly-available cluster (so far, only 2 supported)"
   default = 1

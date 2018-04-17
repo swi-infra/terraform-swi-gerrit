@@ -2,16 +2,8 @@
 
 ## Public
 
-resource "azurerm_public_ip" "public_ip" {
-  count                        = "${var.is_public}"
-  name                         = "${var.env_prefix}publicip"
-  location                     = "${var.location}"
-  resource_group_name          = "${var.resource_group}"
-  public_ip_address_allocation = "static"
-}
-
 resource "azurerm_lb" "lb_public" {
-  count               = "${var.is_public}"
+  count               = "${var.is_public * var.load_balancer}"
   name                = "${var.env_prefix}loadbalancer"
   location            = "${var.location}"
   resource_group_name = "${var.resource_group}"
@@ -23,7 +15,7 @@ resource "azurerm_lb" "lb_public" {
 }
 
 resource "azurerm_lb_probe" "lb_public_probe_http" {
-  count               = "${var.is_public}"
+  count               = "${var.is_public * var.load_balancer}"
   name                = "${var.env_prefix}loadbalancer-probe-http"
   resource_group_name = "${var.resource_group}"
   loadbalancer_id     = "${azurerm_lb.lb_public.id}"
@@ -31,14 +23,14 @@ resource "azurerm_lb_probe" "lb_public_probe_http" {
 }
 
 resource "azurerm_lb_backend_address_pool" "lb_public_backend" {
-  count               = "${var.is_public}"
+  count               = "${var.is_public * var.load_balancer}"
   name                = "${var.env_prefix}loadbalancer-backend"
   resource_group_name = "${var.resource_group}"
   loadbalancer_id     = "${azurerm_lb.lb_public.id}"
 }
 
 resource "azurerm_lb_rule" "lb_public_http" {
-  count                          = "${var.is_public}"
+  count                          = "${var.is_public * var.load_balancer}"
   resource_group_name            = "${var.resource_group}"
   loadbalancer_id                = "${azurerm_lb.lb_public.id}"
   name                           = "${var.env_prefix}loadbalancer-rule-http"
@@ -51,7 +43,7 @@ resource "azurerm_lb_rule" "lb_public_http" {
 }
 
 resource "azurerm_lb_rule" "lb_public_https" {
-  count                          = "${var.is_public}"
+  count                          = "${var.is_public * var.load_balancer}"
   resource_group_name            = "${var.resource_group}"
   loadbalancer_id                = "${azurerm_lb.lb_public.id}"
   name                           = "${var.env_prefix}loadbalancer-rule-https"
@@ -65,7 +57,7 @@ resource "azurerm_lb_rule" "lb_public_https" {
 }
 
 resource "azurerm_lb_rule" "lb_public_ssh" {
-  count                          = "${var.is_public}"
+  count                          = "${var.is_public * var.load_balancer}"
   resource_group_name            = "${var.resource_group}"
   loadbalancer_id                = "${azurerm_lb.lb_public.id}"
   name                           = "${var.env_prefix}loadbalancer-rule-ssh"
@@ -81,7 +73,7 @@ resource "azurerm_lb_rule" "lb_public_ssh" {
 ## Private
 
 resource "azurerm_lb" "lb_private" {
-  count               = "${1 - var.is_public}"
+  count               = "${(1 - var.is_public) * var.load_balancer}"
   name                = "${var.env_prefix}loadbalancer"
   location            = "${var.location}"
   resource_group_name = "${var.resource_group}"
@@ -93,7 +85,7 @@ resource "azurerm_lb" "lb_private" {
 }
 
 resource "azurerm_lb_probe" "lb_private_probe_http" {
-  count               = "${1 - var.is_public}"
+  count               = "${(1 - var.is_public) * var.load_balancer}"
   name                = "${var.env_prefix}loadbalancer-probe-http"
   resource_group_name = "${var.resource_group}"
   loadbalancer_id     = "${azurerm_lb.lb_private.id}"
@@ -101,14 +93,14 @@ resource "azurerm_lb_probe" "lb_private_probe_http" {
 }
 
 resource "azurerm_lb_backend_address_pool" "lb_private_backend" {
-  count               = "${1 - var.is_public}"
+  count               = "${(1 - var.is_public) * var.load_balancer}"
   name                = "${var.env_prefix}loadbalancer-backend"
   resource_group_name = "${var.resource_group}"
   loadbalancer_id     = "${azurerm_lb.lb_private.id}"
 }
 
 resource "azurerm_lb_rule" "lb_private_http" {
-  count                          = "${1 - var.is_public}"
+  count                          = "${(1 - var.is_public) * var.load_balancer}"
   resource_group_name            = "${var.resource_group}"
   loadbalancer_id                = "${azurerm_lb.lb_private.id}"
   name                           = "${var.env_prefix}loadbalancer-rule-http"
@@ -121,7 +113,7 @@ resource "azurerm_lb_rule" "lb_private_http" {
 }
 
 resource "azurerm_lb_rule" "lb_private_https" {
-  count                          = "${1 - var.is_public}"
+  count                          = "${(1 - var.is_public) * var.load_balancer}"
   resource_group_name            = "${var.resource_group}"
   loadbalancer_id                = "${azurerm_lb.lb_private.id}"
   name                           = "${var.env_prefix}loadbalancer-rule-https"
@@ -134,7 +126,7 @@ resource "azurerm_lb_rule" "lb_private_https" {
 }
 
 resource "azurerm_lb_rule" "lb_private_ssh" {
-  count                          = "${1 - var.is_public}"
+  count                          = "${(1 - var.is_public) * var.load_balancer}"
   resource_group_name            = "${var.resource_group}"
   loadbalancer_id                = "${azurerm_lb.lb_private.id}"
   name                           = "${var.env_prefix}loadbalancer-rule-ssh"
