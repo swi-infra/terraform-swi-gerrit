@@ -57,11 +57,11 @@ variable "location" {
 }
 
 variable "platform_update_domain_count" {
-  default = "3"
+  default = "5"
 }
 
 variable "platform_fault_domain_count" {
-  default = "5"
+  default = "3"
 }
 
 variable "virtual_network_name" {
