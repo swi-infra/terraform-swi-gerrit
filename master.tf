@@ -56,6 +56,8 @@ resource "azurerm_availability_set" "master_availability_set" {
   location             = "${var.location}"
   resource_group_name  = "${var.resource_group}"
   managed              = "true"
+  platform_update_domain_count = "${var.platform_update_domain_count}"
+  platform_fault_domain_count  = "${var.platform_fault_domain_count}"
 }
 
 resource "azurerm_virtual_machine" "master" {

@@ -56,6 +56,14 @@ variable "location" {
   default     = "westus"
 }
 
+variable "platform_update_domain_count" {
+  default = "3"
+}
+
+variable "platform_fault_domain_count" {
+  default = "5"
+}
+
 variable "virtual_network_name" {
   description = "The name for the virtual network."
   default     = "gerrit-network"
