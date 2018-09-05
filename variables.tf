@@ -183,3 +183,15 @@ variable "gerrit_oauth_gitlab_client_secret" {
   default     = ""
 }
 
+# AirVantage
+
+variable "gerrit_oauth_airvantage_client_id" {
+  description = "airvantage client id"
+  default     = ""
+}
+
+variable "gerrit_oauth_airvantage_client_secret" {
+  description = "airvantage client secret"
+  default     = ""
+}
+

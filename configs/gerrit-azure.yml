@@ -151,4 +151,6 @@ write_files:
       OAUTH_BITBUCKET_CLIENT_SECRET=${gerrit_oauth_bitbucket_client_secret}
       OAUTH_GITLAB_CLIENT_ID=${gerrit_oauth_gitlab_client_id}
       OAUTH_GITLAB_CLIENT_SECRET=${gerrit_oauth_gitlab_client_secret}
+      OAUTH_AIRVANTAGE_CLIENT_ID=${gerrit_oauth_airvantage_client_id}
+      OAUTH_AIRVANTAGE_CLIENT_SECRET=${gerrit_oauth_airvantage_client_secret}
 

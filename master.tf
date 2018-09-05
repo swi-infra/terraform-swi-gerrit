@@ -20,6 +20,8 @@ data "template_file" "master_config" {
     gerrit_oauth_bitbucket_client_secret = "${var.gerrit_oauth_bitbucket_client_secret}"
     gerrit_oauth_gitlab_client_id = "${var.gerrit_oauth_gitlab_client_id}"
     gerrit_oauth_gitlab_client_secret = "${var.gerrit_oauth_gitlab_client_secret}"
+    gerrit_oauth_airvantage_client_id = "${var.gerrit_oauth_airvantage_client_id}"
+    gerrit_oauth_airvantage_client_secret = "${var.gerrit_oauth_airvantage_client_secret}"
   }
 }
 
