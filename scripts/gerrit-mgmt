@@ -91,10 +91,12 @@ else
     exit 1
 fi
 
+docker network create gerrit
 docker run \
             --name gerrit \
             --rm \
             ${DOCKER_RUN_ARGS} \
+            --net gerrit
             --env-file /tmp/gerrit-environment \
             --volume /lstorage/services/gerrit/ssh_host_rsa_key:/var/gerrit/ssh_host_rsa_key \
             --volume /lstorage/services/gerrit/ssh_host_dsa_key:/var/gerrit/ssh_host_dsa_key \
