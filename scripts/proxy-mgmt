@@ -11,12 +11,17 @@ start_service() {
 
     docker rm -f "$service" || true
 
+    SERVICE_NETWORK=${SERVICE_NETWORK:-gerrit}
+
+    docker network create ${SERVICE_NETWORK} || true
+
     if [[ "$service" == "nginx-proxy" ]]; then
         docker pull jwilder/nginx-proxy
 
         docker run \
                     --name $SERVICE \
                     --rm \
+                    --net ${SERVICE_NETWORK} \
                     -p 80:80 \
                     -p 443:443 \
                     --volume /lstorage/services/nginx/certs:/etc/nginx/certs:ro \
@@ -33,6 +38,7 @@ start_service() {
         docker run \
                     --name $SERVICE \
                     --rm \
+                    --net ${SERVICE_NETWORK} \
                     --volume /lstorage/services/nginx/certs:/etc/nginx/certs:rw \
                     --volume /var/run/docker.sock:/var/run/docker.sock:ro \
                     --volumes-from nginx-proxy \

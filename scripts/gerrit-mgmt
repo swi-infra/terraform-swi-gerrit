@@ -10,6 +10,7 @@ fi
 
 GERRIT_DOCKER_DEFAULT_IMAGE='quay.io/swi-infra/gerrit:latest'
 GERRIT_DOCKER_IMAGE=${GERRIT_DOCKER_IMAGE:-$GERRIT_DOCKER_DEFAULT_IMAGE}
+GERRIT_DOCKER_NETWORK_NAME=${GERRIT_DOCKER_NETWORK_NAME:-gerrit}
 
 if [ -z "$GERRIT_ROLE" ]; then
     if [[ "$MACHINE_TYPE" == "gerrit-mirror" ]]; then
@@ -91,9 +92,14 @@ else
     exit 1
 fi
 
+if ! docker network create "${GERRIT_DOCKER_NETWORK_NAME}"; then
+    echo "Network already created"
+fi
+
 docker run \
             --name gerrit \
             --rm \
+            --net "${GERRIT_DOCKER_NETWORK_NAME}" \
             ${DOCKER_RUN_ARGS} \
             --env-file /tmp/gerrit-environment \
             --volume /lstorage/services/gerrit/ssh_host_rsa_key:/var/gerrit/ssh_host_rsa_key \
