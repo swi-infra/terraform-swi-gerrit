@@ -48,24 +48,27 @@ coreos:
         ExecStart=/tmp/tf-module/scripts/glusterfs-mgmt start
         ExecStop=/tmp/tf-module/scripts/glusterfs-mgmt stop
         TimeoutStartSec=0
-    - name: git-daemon.service
+    - name: postgres.service
       command: start
       content: |
         [Unit]
-        Description=Git Daemon
-        After=docker.service data-storage.service glusterfs.service
-        Requires=docker.service data-storage.service glusterfs.service
+        Description=PostgreSQL
+        After=docker.service data-storage.service
+        Requires=docker.service data-storage.service
 
         [Service]
-        ExecStartPre=-/usr/bin/docker kill %p
+        ExecStartPre=-/usr/bin/docker kill -f %p
         ExecStartPre=-/usr/bin/docker rm %p
-        ExecStartPre=/usr/bin/docker pull quay.io/swi-infra/git-daemon
+        ExecStartPre=-/usr/bin/docker network create gerrit
+        ExecStartPre=/usr/bin/docker pull postgres:11.1-alpine
         ExecStart=/usr/bin/docker run \
                               --name %p \
                               --rm \
-                              --publish 9418:9418 \
-                              --volume /storage/git-oss:/git \
-                              quay.io/swi-infra/git-daemon
+                              -p 5432:5432 \
+                              --net gerrit \
+                              --env-file /storage/services/postgres/gerrit-postgres-environment \
+                              --volume /storage/services/postgres/data:/var/lib/postgresql/data \
+                              postgres:11.1-alpine
         ExecStop=/usr/bin/docker kill %p
         Restart=always
         RestartSec=10s
@@ -76,8 +79,8 @@ coreos:
       content: |
         [Unit]
         Description=Gerrit
-        After=docker.service data-storage.service glusterfs.service
-        Requires=docker.service data-storage.service glusterfs.service
+        After=docker.service postgres.service data-storage.service glusterfs.service
+        Requires=docker.service postgres.service data-storage.service glusterfs.service
 
         [Service]
         ExecStart=/tmp/tf-module/scripts/gerrit-mgmt start
@@ -153,4 +156,9 @@ write_files:
       OAUTH_GITLAB_CLIENT_SECRET=${gerrit_oauth_gitlab_client_secret}
       OAUTH_AIRVANTAGE_CLIENT_ID=${gerrit_oauth_airvantage_client_id}
       OAUTH_AIRVANTAGE_CLIENT_SECRET=${gerrit_oauth_airvantage_client_secret}
+      DATABASE_TYPE=postgresql
+      DATABASE_HOSTNAME=postgres
+      DATABASE_PORT=5432
+      DATABASE_DATABASE=reviewdb
+      DATABASE_USERNAME=gerrit2
 
