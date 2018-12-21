@@ -10,6 +10,11 @@ variable "master_vm_size" {
   default = "Standard_DS2_v2"
 }
 
+variable "mirror_vm_size" {
+  description = "VM Size"
+  default = "Standard_B2s"
+}
+
 variable "data_disk_size_gb" {
   description = "Size of the disk containing Gerrit data (instanciated for each VM)"
   default = 512
@@ -40,8 +45,17 @@ variable "is_public" {
   default = true
 }
 
+variable "master_ip_domain" {
+  description = "Domain name associated with the public IP for master VMs"
+  default = "gerrit"
+}
+
 variable "gerrit_hostname" {
   description = "Hostname used to access the service"
+}
+
+variable "master_hostname" {
+  description = "Hostname used to access the master VM"
 }
 
 ## Azure
@@ -54,6 +68,18 @@ variable "resource_group" {
 variable "location" {
   description = "The location/region where the virtual network is created. Changing this forces a new resource to be created."
   default     = "westus"
+}
+
+variable "mirror_distribution" {
+  description = "location of the gerrit mirror"
+  type = "list"
+  default = ["westus2"]
+}
+
+variable "mirror_locations" {
+  description = "location of the gerrit mirror"
+  type = "list"
+  default = ["westus2"]
 }
 
 variable "platform_update_domain_count" {
@@ -75,8 +101,19 @@ variable "subnet" {
 }
 
 variable "subnet_id" {
-  description = "The subnet ID used to host Gerrit servers"
-  default = "/subscriptions/xxxx/resourceGroups/xxxx/providers/Microsoft.Network/virtualNetworks/xxx/subnets/gerrit-subnet"
+  type        = "map"
+  default     = {
+    "westeurope" = "/subscriptions/xxxx/resourceGroups/xxxx/providers/Microsoft.Network/virtualNetworks/xxx/subnets/gerrit-subnet"
+    "westus2"    = "/subscriptions/xxxx/resourceGroups/xxxx/providers/Microsoft.Network/virtualNetworks/xxx/subnets/gerrit-subnet"
+  }
+}
+
+variable "ssh_vm_allowed" {
+  default     = "false"
+}
+
+variable "ssh_vm_address_prefix" {
+  default     = "*"
 }
 
 ## VMs OS
