@@ -43,6 +43,19 @@ start_service() {
                     --volume /var/run/docker.sock:/var/run/docker.sock:ro \
                     --volumes-from nginx-proxy \
                     jrcs/letsencrypt-nginx-proxy-companion
+
+    elif [[ "$service" == "nginx-passthrough" ]]; then
+        docker pull nginx:alpine
+
+        docker run \
+                    --name $SERVICE \
+                    --rm \
+                    --net ${SERVICE_NETWORK} \
+                    -p 80:80 \
+                    -p 443:443 \
+                    --volume /lstorage/services/nginx/vhost.d:/etc/nginx/vhost.d \
+                    nginx:alpine
+
     else
         exit 1
     fi

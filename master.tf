@@ -1,7 +1,7 @@
 ## master(s)
 
 data "template_file" "master_config" {
-  template = "${file("${path.module}/configs/gerrit-azure.yml")}"
+  template = "${file("${path.module}/configs/gerrit-master-azure.yml")}"
 
   vars {
     config_url = "${var.config_url}"
@@ -26,14 +26,15 @@ data "template_file" "master_config" {
 }
 
 resource "azurerm_network_interface" "master_nic" {
-  count               = "${var.master_nb}"
-  name                = "${var.env_prefix}master${count.index}-nic"
-  location            = "${var.location}"
-  resource_group_name = "${var.resource_group}"
+  count                     = "${var.master_nb}"
+  name                      = "${var.env_prefix}master${count.index}-nic"
+  location                  = "${var.location}"
+  resource_group_name       = "${var.resource_group}"
+  network_security_group_id = "${azurerm_network_security_group.master_nsg.id}"
 
   ip_configuration {
     name                          = "${var.env_prefix}master${count.index}-ipconfig"
-    subnet_id                     = "${var.subnet_id}"
+    subnet_id                     = "${var.subnet_id["westeurope"]}"
     private_ip_address_allocation = "Dynamic"
     public_ip_address_id = "${var.load_balancer ? "" : (var.is_public ? azurerm_public_ip.public_ip.id : "")}"
     load_balancer_backend_address_pools_ids = [
@@ -58,8 +59,8 @@ resource "azurerm_availability_set" "master_availability_set" {
   location             = "${var.location}"
   resource_group_name  = "${var.resource_group}"
   managed              = "true"
-  platform_update_domain_count = "${var.platform_update_domain_count}"
-  platform_fault_domain_count  = "${var.platform_fault_domain_count}"
+  platform_update_domain_count = "${var.master_platform_update_domain_count}"
+  platform_fault_domain_count  = "${var.master_platform_fault_domain_count}"
 }
 
 resource "azurerm_virtual_machine" "master" {
@@ -109,3 +110,67 @@ resource "azurerm_virtual_machine" "master" {
   }
 }
 
+# Firewall
+
+resource "azurerm_network_security_group" "master_nsg" {
+  name                  = "${var.env_prefix}master"
+  location              = "${var.location}"
+  resource_group_name   = "${var.resource_group}"
+}
+
+resource "azurerm_network_security_rule" "master_nsg_ssh" {
+  count                         = "${(length(var.ssh_vm_address_prefix) != 0) ? 1 : 0}"
+  priority                      = 150
+  name                          = "SSH"
+  direction                     = "Inbound"
+  access                        = "Allow"
+  protocol                      = "Tcp"
+  source_port_range             = "*"
+  destination_port_range        = "22"
+  source_address_prefixes       = "${values(var.ssh_vm_address_prefix)}"
+  destination_address_prefix    = "*"
+  resource_group_name           = "${var.resource_group}"
+  network_security_group_name   = "${azurerm_network_security_group.master_nsg.name}"
+}
+
+resource "azurerm_network_security_rule" "master_nsg_http" {
+  priority                      = 170
+  name                          = "HTTP"
+  direction                     = "Inbound"
+  access                        = "Allow"
+  protocol                      = "Tcp"
+  source_port_range             = "*"
+  destination_port_range        = "80"
+  source_address_prefix         = "*"
+  destination_address_prefix    = "*"
+  resource_group_name           = "${var.resource_group}"
+  network_security_group_name   = "${azurerm_network_security_group.master_nsg.name}"
+}
+
+resource "azurerm_network_security_rule" "master_nsg_https" {
+  priority                      = 171
+  name                          = "HTTPS"
+  direction                     = "Inbound"
+  access                        = "Allow"
+  protocol                      = "Tcp"
+  source_port_range             = "*"
+  destination_port_range        = "443"
+  source_address_prefix         = "*"
+  destination_address_prefix    = "*"
+  resource_group_name           = "${var.resource_group}"
+  network_security_group_name   = "${azurerm_network_security_group.master_nsg.name}"
+}
+
+resource "azurerm_network_security_rule" "master_nsg_gerrit_ssh" {
+  priority                      = 180
+  name                          = "Gerrit_SSH"
+  direction                     = "Inbound"
+  access                        = "Allow"
+  protocol                      = "Tcp"
+  source_port_range             = "*"
+  destination_port_range        = "29418"
+  source_address_prefix         = "*"
+  destination_address_prefix    = "*"
+  resource_group_name           = "${var.resource_group}"
+  network_security_group_name   = "${azurerm_network_security_group.master_nsg.name}"
+}

@@ -1,0 +1,124 @@
+#cloud-config
+
+coreos:
+  units:
+    - name: locksmithd.service
+      mask: true
+    - name: scripts.service
+      command: start
+      content: |
+        [Unit]
+        Description=Configuration scripts
+        Requires=network-online.target
+        After=network-online.target
+
+        [Service]
+        EnvironmentFile=/etc/farm-environment
+        Type=oneshot
+        RemainAfterExit=yes
+        ExecStartPre=/usr/bin/rm -rf /tmp/tf-module
+        ExecStart=/usr/bin/git clone --depth 1 $${CONFIG_URL} /tmp/tf-module
+        TimeoutStartSec=0
+    - name: data-storage.service
+      command: start
+      content: |
+        [Unit]
+        Description=Local storage
+        Requires=scripts.service
+        After=scripts.service
+
+        [Service]
+        EnvironmentFile=/etc/farm-environment
+        Type=oneshot
+        RemainAfterExit=yes
+        ExecStart=/tmp/tf-module/scripts/disk-mgmt start $${MACHINE_TYPE}
+        ExecStop=/tmp/tf-module/scripts/disk-mgmt stop $${MACHINE_TYPE}
+        TimeoutStartSec=0
+    - name: glusterfs.service
+      command: start
+      content: |
+        [Unit]
+        Description=Shared storage
+        Requires=scripts.service data-storage.service
+        After=scripts.service data-storage.service
+
+        [Service]
+        Type=oneshot
+        RemainAfterExit=yes
+        ExecStart=/tmp/tf-module/scripts/glusterfs-mgmt start
+        ExecStop=/tmp/tf-module/scripts/glusterfs-mgmt stop
+        TimeoutStartSec=0
+    - name: gerrit.service
+      command: start
+      content: |
+        [Unit]
+        Description=Gerrit
+        After=docker.service postgres.service data-storage.service glusterfs.service
+        Requires=docker.service postgres.service data-storage.service glusterfs.service
+
+        [Service]
+        ExecStart=/tmp/tf-module/scripts/gerrit-mgmt start
+        ExecStop=/tmp/tf-module/scripts/gerrit-mgmt stop
+        Restart=always
+        RestartSec=10s
+        TimeoutStartSec=0
+        TimeoutStopSec=15
+    - name: nginx-passthrough.service
+      command: start
+      content: |
+        [Unit]
+        Description=Nginx passthrough
+        After=docker.service data-storage.service glusterfs.service
+        Requires=docker.service data-storage.service glusterfs.service
+
+        [Service]
+        ExecStart=/tmp/tf-module/scripts/proxy-mgmt start nginx-passthrough
+        ExecStop=/tmp/tf-module/scripts/proxy-mgmt stop nginx-passthrough
+        Restart=always
+        RestartSec=10s
+        TimeoutStartSec=0
+        TimeoutStopSec=15
+    - name: git-sync.service
+      command: start
+      content: |
+        [Unit]
+        Description=Git sync mechanism
+        After=docker.service data-storage.service glusterfs.service
+        Requires=docker.service data-storage.service glusterfs.service
+
+        [Service]
+        ExecStart=/tmp/tf-module/scripts/git-sync-mgmt start
+        ExecStop=/tmp/tf-module/scripts/git-sync-mgmt stop
+        Restart=always
+        RestartSec=10s
+        TimeoutStartSec=0
+        TimeoutStopSec=15
+
+write_files:
+  - path: /etc/waagent.conf
+    permissions: 0644
+    owner: root
+    content: |
+      ResourceDisk.Format=y
+      ResourceDisk.EnableSwap=y
+  - path: /etc/farm-environment
+    permissions: 0644
+    owner: root
+    content: |
+      MACHINE_TYPE=gerrit-mirror
+      FARM_PLATFORM=cloud-azure
+      CONFIG_URL=${config_url}
+      MASTER_HOSTNAME=${master_hostname}
+  - path: /etc/gerrit-environment
+    permissions: 0644
+    owner: root
+    content: |
+      TRANSFER_TIMEOUT=20 m
+      SSHD_IDLETIMEOUT=1 m
+      SSHD_WAITTIMEOUT=20 m
+      DATABASE_TYPE=postgresql
+      DATABASE_HOSTNAME=postgres
+      DATABASE_PORT=5432
+      DATABASE_DATABASE=reviewdb
+      DATABASE_USERNAME=gerrit2
+

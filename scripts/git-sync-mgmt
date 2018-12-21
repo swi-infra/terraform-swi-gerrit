@@ -1,0 +1,52 @@
+#!/bin/bash -xe
+# Provide a container that the master can connect to as to replicate git data.
+
+if [ -e "/etc/farm-environment" ]; then
+    source /etc/farm-environment
+fi
+
+CNT_NAME="git-sync-sshd"
+DOCKER_IMAGE="docker.io/panubo/sshd"
+
+start_sshd_cnt() {
+
+    mkdir -p "/lstorage/services/git-sync/keys"
+    mkdir -p "/lstorage/git"
+
+    if [ ! -e "/lstorage/services/git-sync/gerrit-pub-key" ]; then
+        echo "/lstorage/services/git-sync/gerrit-pub-key not provisioned"
+        exit 1
+    fi
+
+
+    docker run \
+                -v /lstorage/services/git-sync/keys:/etc/ssh/keys \
+                -v /lstorage/services/git-sync/gerrit-pub-key:/etc/authorized_keys/gerrit \
+                -v /lstorage/git:/git \
+                -e SSH_USERS=gerrit:1000:1000 \
+                -d \
+                --rm \
+                --publish 22022:22 \
+                --name $CNT_NAME \
+                $DOCKER_IMAGE
+}
+
+case "$1" in
+    start)
+        start_sshd_cnt
+        ;;
+    stop)
+        docker rm -f $CNT_NAME
+        ;;
+    restart)
+        $0 stop
+        $0 start
+        ;;
+    *)
+        echo "Usage: $0 {start|stop|restart}"
+        exit 1
+        ;;
+esac
+
+exit 0
+
