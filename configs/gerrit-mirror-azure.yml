@@ -109,6 +109,7 @@ write_files:
       FARM_PLATFORM=cloud-azure
       CONFIG_URL=${config_url}
       MASTER_HOSTNAME=${master_hostname}
+      HOST_HOSTNAME=${gerrit_hostname}
   - path: /etc/gerrit-environment
     permissions: 0644
     owner: root
