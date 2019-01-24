@@ -6,6 +6,7 @@ data "template_file" "mirror_config" {
   vars {
     config_url = "${var.config_url}"
     master_hostname = "${var.master_hostname}"
+    gerrit_hostname = "${var.gerrit_hostname}"
   }
 }
 
