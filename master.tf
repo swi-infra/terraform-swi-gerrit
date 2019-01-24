@@ -110,6 +110,32 @@ resource "azurerm_virtual_machine" "master" {
   }
 }
 
+resource "null_resource" "master_config_update" {
+
+  triggers {
+    template_rendered = "${data.template_file.master_config.rendered}"
+  }
+
+  connection {
+    type = "ssh"
+    user = "core"
+    host = "${azurerm_public_ip.public_ip.ip_address}"
+    private_key = "${file("~/.ssh/id_rsa")}"
+  }
+
+  provisioner "file" {
+    content     = "${data.template_file.master_config.rendered}"
+    destination = "/tmp/CustomData"
+  }
+
+  provisioner "remote-exec" {
+    inline = [
+      "sudo diff /tmp/CustomData /var/lib/waagent/CustomData | tee /tmp/CustomData-diff",
+      "sudo cp /tmp/CustomData /var/lib/waagent/CustomData"
+    ]
+  }
+}
+
 # Firewall
 
 resource "azurerm_network_security_group" "master_nsg" {

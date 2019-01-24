@@ -104,6 +104,33 @@ resource "azurerm_virtual_machine" "mirror" {
   }
 }
 
+resource "null_resource" "mirror_config_update" {
+  count                 = "${length(var.mirror_distribution)}"
+
+  triggers {
+    template_rendered = "${data.template_file.mirror_config.rendered}"
+  }
+
+  connection {
+    type = "ssh"
+    user = "core"
+    host = "${azurerm_public_ip.mirror_public_ip.*.ip_address[count.index]}"
+    private_key = "${file("~/.ssh/id_rsa")}"
+  }
+
+  provisioner "file" {
+    content     = "${data.template_file.mirror_config.rendered}"
+    destination = "/tmp/CustomData"
+  }
+
+  provisioner "remote-exec" {
+    inline = [
+      "sudo diff /tmp/CustomData /var/lib/waagent/CustomData | tee /tmp/CustomData-diff",
+      "sudo cp /tmp/CustomData /var/lib/waagent/CustomData"
+    ]
+  }
+}
+
 # Firewall
 
 resource "azurerm_network_security_group" "mirror_nsg" {
@@ -176,7 +203,7 @@ resource "azurerm_network_security_rule" "mirror_nsg_gerrit_ssh" {
 resource "azurerm_network_security_rule" "mirror_nsg_git_sync_ssh" {
   count                         = "${length(var.mirror_distribution)}"
   priority                      = 190
-  name                          = "Git Sync SSH"
+  name                          = "Git-Sync_SSH"
   direction                     = "Inbound"
   access                        = "Allow"
   protocol                      = "Tcp"
