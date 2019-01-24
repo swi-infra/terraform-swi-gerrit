@@ -174,3 +174,19 @@ resource "azurerm_network_security_rule" "master_nsg_gerrit_ssh" {
   resource_group_name           = "${var.resource_group}"
   network_security_group_name   = "${azurerm_network_security_group.master_nsg.name}"
 }
+
+resource "azurerm_network_security_rule" "master_nsg_postgres" {
+  priority                      = 190
+  name                          = "Postgres"
+  direction                     = "Inbound"
+  access                        = "Allow"
+  protocol                      = "Tcp"
+  source_port_range             = "*"
+  destination_port_range        = "5432"
+  source_address_prefix         = "${element(azurerm_public_ip.mirror_public_ip.*.ip_address, 0)}"
+  #source_address_prefixes       = "${azurerm_public_ip.mirror_public_ip.*.ip_address}"
+  destination_address_prefix    = "*"
+  resource_group_name           = "${var.resource_group}"
+  network_security_group_name   = "${azurerm_network_security_group.master_nsg.name}"
+}
+

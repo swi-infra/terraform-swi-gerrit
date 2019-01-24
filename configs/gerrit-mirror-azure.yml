@@ -117,7 +117,7 @@ write_files:
       SSHD_IDLETIMEOUT=1 m
       SSHD_WAITTIMEOUT=20 m
       DATABASE_TYPE=postgresql
-      DATABASE_HOSTNAME=postgres
+      DATABASE_HOSTNAME=${master_hostname}
       DATABASE_PORT=5432
       DATABASE_DATABASE=reviewdb
       DATABASE_USERNAME=gerrit2

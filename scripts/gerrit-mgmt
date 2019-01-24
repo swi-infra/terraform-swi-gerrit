@@ -28,15 +28,8 @@ fi
 
 docker pull ${GERRIT_DOCKER_IMAGE}
 
-# Migrate from old location
-if [ -e "/lstorage/services/gerrit/cache" ]; then
-    mkdir -p /lstorage/services/gerrit/review_site
-    mv /lstorage/services/gerrit/{etc,cache,index,plugins,logs,db,events-db,static} \
-       /lstorage/services/gerrit/review_site
-fi
-
 # Create directories to store Gerrit files
-mkdir -p /lstorage/services/gerrit/review_site/{etc,cache,index,plugins,logs,db,events-db,static}
+mkdir -p /lstorage/services/gerrit/{etc,cache,index,plugins,logs,db,events-db,static}
 
 # Generate private keys used for Gerrit SSH server
 KEY_COMMENT="gerrit-code-review@$(hostname)"
@@ -112,7 +105,14 @@ docker run \
             --volume /lstorage/services/gerrit/ssh_host_rsa_key:/var/gerrit/ssh_host_rsa_key \
             --volume /lstorage/services/gerrit/ssh_host_dsa_key:/var/gerrit/ssh_host_dsa_key \
             --volume /lstorage/services/gerrit/ssh_host_ecdsa_key:/var/gerrit/ssh_host_ecdsa_key \
-            --volume /lstorage/services/gerrit/review_site:/var/gerrit/review_site \
+            --volume /lstorage/services/gerrit/cache:/var/gerrit/review_site/cache \
+            --volume /lstorage/services/gerrit/index:/var/gerrit/review_site/index \
+            --volume /lstorage/services/gerrit/etc:/var/gerrit/review_site/etc \
+            --volume /lstorage/services/gerrit/plugins:/var/gerrit/review_site/plugins \
+            --volume /lstorage/services/gerrit/logs:/var/gerrit/review_site/logs \
+            --volume /lstorage/services/gerrit/db:/var/gerrit/review_site/db \
+            --volume /lstorage/services/gerrit/events-db:/var/gerrit/review_site/events-db \
+            --volume /lstorage/services/gerrit/static:/var/gerrit/review_site/static \
             --volume /lstorage/git:/var/gerrit/review_site/git \
             ${GERRIT_DOCKER_IMAGE}
 
