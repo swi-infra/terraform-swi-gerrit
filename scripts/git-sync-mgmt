@@ -24,7 +24,6 @@ start_sshd_cnt() {
                 -v /lstorage/services/git-sync/gerrit-pub-key:/etc/authorized_keys/gerrit \
                 -v /lstorage/git:/git \
                 -e SSH_USERS=gerrit:1000:1000 \
-                -d \
                 --rm \
                 --publish 22022:22 \
                 --name $CNT_NAME \

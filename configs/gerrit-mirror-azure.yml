@@ -53,8 +53,8 @@ coreos:
       content: |
         [Unit]
         Description=Gerrit
-        After=docker.service postgres.service data-storage.service glusterfs.service
-        Requires=docker.service postgres.service data-storage.service glusterfs.service
+        After=docker.service data-storage.service glusterfs.service
+        Requires=docker.service data-storage.service glusterfs.service
 
         [Service]
         ExecStart=/tmp/tf-module/scripts/gerrit-mgmt start
