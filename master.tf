@@ -22,6 +22,7 @@ data "template_file" "master_config" {
     gerrit_oauth_gitlab_client_secret = "${var.gerrit_oauth_gitlab_client_secret}"
     gerrit_oauth_airvantage_client_id = "${var.gerrit_oauth_airvantage_client_id}"
     gerrit_oauth_airvantage_client_secret = "${var.gerrit_oauth_airvantage_client_secret}"
+    gerrit_mirror_ips = "${join(",", azurerm_public_ip.mirror_public_ip.*.ip_address)}"
   }
 }
 

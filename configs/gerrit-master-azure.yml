@@ -176,4 +176,5 @@ write_files:
       DATABASE_PORT=5432
       DATABASE_DATABASE=reviewdb
       DATABASE_USERNAME=gerrit2
+      MIRROR_IPS=${gerrit_mirror_ips}
 
