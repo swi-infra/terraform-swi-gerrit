@@ -104,6 +104,21 @@ coreos:
         RestartSec=10s
         TimeoutStartSec=0
         TimeoutStopSec=15
+    - name: nginx-master-redir.service
+      command: start
+      content: |
+        [Unit]
+        Description=Nginx redirect from master.<hostname> to <hostname>
+        After=docker.service
+        Requires=docker.service
+
+        [Service]
+        ExecStart=/tmp/tf-module/scripts/proxy-mgmt start nginx-master-redir
+        ExecStop=/tmp/tf-module/scripts/proxy-mgmt stop nginx-master-redir
+        Restart=always
+        RestartSec=10s
+        TimeoutStartSec=0
+        TimeoutStopSec=15
     - name: letsencrypt.service
       command: start
       content: |

@@ -52,10 +52,30 @@ start_service() {
                     --volumes-from nginx-proxy \
                     jrcs/letsencrypt-nginx-proxy-companion
 
+    elif [[ "$service" == "nginx-master-redir" ]]; then
+        docker pull nginx:alpine
+
+        tee /tmp/nginx-master-redir.conf <<NginxConf
+server {
+    listen 80 default_server;
+    access_log /var/log/nginx/access.log;
+    return 301 https://${HOST_HOSTNAME}$request_uri;
+}
+NginxConf
+
+        docker run \
+                    --name $SERVICE \
+                    --rm \
+                    --net ${SERVICE_NETWORK} \
+                    --env VIRTUAL_HOST="master.${HOST_HOSTNAME}" \
+                    --env LETSENCRYPT_HOST="master.${HOST_HOSTNAME}" \
+                    --volume /tmp/nginx-master-redir.conf:/etc/nginx/vhost.d/redir.conf:ro \
+                    nginx:alpine
+
     elif [[ "$service" == "nginx-passthrough" ]]; then
         docker pull nginx:alpine
 
-        tee -a /tmp/nginx-passthrough.conf <<NginxConf
+        tee /tmp/nginx-passthrough.conf <<NginxConf
 user  nginx;
 worker_processes  1;
 
