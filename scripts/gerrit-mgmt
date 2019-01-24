@@ -87,7 +87,7 @@ if [[ "$GERRIT_ROLE" == "master" ]]; then
 
     set_env GET_PLUGINS "high-availability,avatars-gravatar:master-master,replication"
 
-    if [ -n "$MIRROR_IPS" ]; then
+    if [ -n "$GERRIT_MIRROR_IPS" ]; then
         # SSH configuration for replication
         tee /lstorage/services/gerrit/.ssh/config <<SshConfig
 Host *
@@ -98,7 +98,7 @@ SshConfig
         rm -f /lstorage/services/gerrit/.ssh/known_hosts
         touch /lstorage/services/gerrit/.ssh/known_hosts
 
-        for mirror in $(echo $MIRROR_IPS | tr ',' ' '); do
+        for mirror in $(echo $GERRIT_MIRROR_IPS | tr ',' ' '); do
             # Accept host key
             ssh-keyscan -p 22022 -t rsa $mirror >> /lstorage/services/gerrit/.ssh/known_hosts
 

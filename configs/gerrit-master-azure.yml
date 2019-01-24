@@ -150,6 +150,7 @@ write_files:
       FARM_PLATFORM=cloud-azure
       CONFIG_URL=${config_url}
       HOST_HOSTNAME=${gerrit_hostname}
+      GERRIT_MIRROR_IPS=${gerrit_mirror_ips}
   - path: /etc/gerrit-environment
     permissions: 0644
     owner: root
@@ -176,5 +177,4 @@ write_files:
       DATABASE_PORT=5432
       DATABASE_DATABASE=reviewdb
       DATABASE_USERNAME=gerrit2
-      MIRROR_IPS=${gerrit_mirror_ips}
 
