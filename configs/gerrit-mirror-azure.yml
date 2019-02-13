@@ -53,8 +53,8 @@ coreos:
       content: |
         [Unit]
         Description=Gerrit
-        After=docker.service postgres.service data-storage.service glusterfs.service
-        Requires=docker.service postgres.service data-storage.service glusterfs.service
+        After=docker.service data-storage.service glusterfs.service
+        Requires=docker.service data-storage.service glusterfs.service
 
         [Service]
         ExecStart=/tmp/tf-module/scripts/gerrit-mgmt start
@@ -109,6 +109,7 @@ write_files:
       FARM_PLATFORM=cloud-azure
       CONFIG_URL=${config_url}
       MASTER_HOSTNAME=${master_hostname}
+      HOST_HOSTNAME=${gerrit_hostname}
   - path: /etc/gerrit-environment
     permissions: 0644
     owner: root
@@ -117,7 +118,7 @@ write_files:
       SSHD_IDLETIMEOUT=1 m
       SSHD_WAITTIMEOUT=20 m
       DATABASE_TYPE=postgresql
-      DATABASE_HOSTNAME=postgres
+      DATABASE_HOSTNAME=${master_hostname}
       DATABASE_PORT=5432
       DATABASE_DATABASE=reviewdb
       DATABASE_USERNAME=gerrit2

@@ -82,12 +82,28 @@ variable "mirror_locations" {
   default = ["westus2"]
 }
 
-variable "platform_update_domain_count" {
+variable "mirror_ip_domains" {
+  description = "Domain name associated with the public IP for mirror VMs"
+  type = "list"
+  default = []
+}
+
+variable "master_platform_update_domain_count" {
   default = "5"
 }
 
-variable "platform_fault_domain_count" {
+variable "master_platform_fault_domain_count" {
   default = "3"
+}
+
+variable "mirror_platform_update_domain_count" {
+  type = "list"
+  default = ["2"]
+}
+
+variable "mirror_platform_fault_domain_count" {
+  type = "list"
+  default = ["2"]
 }
 
 variable "virtual_network_name" {
@@ -108,12 +124,9 @@ variable "subnet_id" {
   }
 }
 
-variable "ssh_vm_allowed" {
-  default     = "false"
-}
-
 variable "ssh_vm_address_prefix" {
-  default     = "*"
+  type        = "map"
+  default     = {}
 }
 
 ## VMs OS

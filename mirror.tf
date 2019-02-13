@@ -5,11 +5,18 @@ data "template_file" "mirror_config" {
 
   vars {
     config_url = "${var.config_url}"
-    mirror_locations = "${var.mirror_locations}"
-    mirror_distribution = "${var.mirror_distribution}"
-    mirror_ips = "${element(concat(azurerm_network_interface.mirror_nic.*.private_ip_address), 0)}"
     master_hostname = "${var.master_hostname}"
+    gerrit_hostname = "${var.gerrit_hostname}"
   }
+}
+
+resource "azurerm_public_ip" "mirror_public_ip" {
+  count                        = "${var.is_public * length(var.mirror_distribution)}"
+  name                         = "${var.env_prefix}mirror${count.index}-publicip"
+  location                     = "${var.mirror_distribution[count.index]}"
+  resource_group_name          = "${var.resource_group}"
+  allocation_method            = "Dynamic"
+  domain_name_label            = "${var.mirror_ip_domains[count.index]}"
 }
 
 resource "azurerm_network_interface" "mirror_nic" {
@@ -17,13 +24,13 @@ resource "azurerm_network_interface" "mirror_nic" {
   name                      = "${var.env_prefix}mirror${count.index}-nic"
   location                  = "${var.mirror_distribution[count.index]}"
   resource_group_name       = "${var.resource_group}"
-  network_security_group_id = "${azurerm_network_security_group.mirror_nsg.id}"
+  network_security_group_id = "${azurerm_network_security_group.mirror_nsg.*.id[count.index]}"
 
   ip_configuration {
     name                          = "${var.env_prefix}mirror${count.index}-ipconfig"
     subnet_id                     = "${var.subnet_id[var.mirror_distribution[count.index]]}"
     private_ip_address_allocation = "Dynamic"
-    public_ip_address_id = "${var.load_balancer ? "" : (var.is_public ? azurerm_public_ip.public_ip.id : "")}"
+    public_ip_address_id = "${var.load_balancer ? "" : (var.is_public ? azurerm_public_ip.mirror_public_ip.*.id[count.index] : "")}"
     load_balancer_backend_address_pools_ids = [
       "${coalescelist(azurerm_lb_backend_address_pool.lb_public_backend.*.id,
                       azurerm_lb_backend_address_pool.lb_private_backend.*.id)}",
@@ -47,8 +54,8 @@ resource "azurerm_availability_set" "mirror_availability_set" {
   location             = "${var.mirror_locations[count.index]}"
   resource_group_name  = "${var.resource_group}"
   managed              = "true"
-  platform_update_domain_count = "${var.platform_update_domain_count}"
-  platform_fault_domain_count  = "${var.platform_fault_domain_count}"
+  platform_update_domain_count = "${var.mirror_platform_update_domain_count[count.index]}"
+  platform_fault_domain_count  = "${var.mirror_platform_fault_domain_count[count.index]}"
 }
 
 resource "azurerm_virtual_machine" "mirror" {
@@ -98,96 +105,114 @@ resource "azurerm_virtual_machine" "mirror" {
   }
 }
 
+resource "null_resource" "mirror_config_update" {
+  count                 = "${length(var.mirror_distribution)}"
+
+  triggers {
+    template_rendered = "${data.template_file.mirror_config.rendered}"
+  }
+
+  connection {
+    type = "ssh"
+    user = "core"
+    host = "${azurerm_public_ip.mirror_public_ip.*.ip_address[count.index]}"
+    private_key = "${file("~/.ssh/id_rsa")}"
+  }
+
+  provisioner "file" {
+    content     = "${data.template_file.mirror_config.rendered}"
+    destination = "/tmp/CustomData"
+  }
+
+  provisioner "remote-exec" {
+    inline = [
+      "sudo diff /tmp/CustomData /var/lib/waagent/CustomData | tee /tmp/CustomData-diff",
+      "sudo cp /tmp/CustomData /var/lib/waagent/CustomData"
+    ]
+  }
+}
+
 # Firewall
 
 resource "azurerm_network_security_group" "mirror_nsg" {
-  name                  = "${var.env_prefix}mirror"
-  location              = "${var.location}"
+  count                 = "${length(var.mirror_distribution)}"
+  name                  = "${var.env_prefix}mirror${count.index}"
+  location              = "${var.mirror_distribution[count.index]}"
   resource_group_name   = "${var.resource_group}"
 }
 
-resource "azurerm_network_security_rule" "mirror_nsg_out" {
-  priority                      = 100
-  name                          = "Outbound"
-  direction                     = "Outbound"
-  access                        = "Allow"
-  protocol                      = "Tcp"
-  source_port_range             = "*"
-  destination_port_range        = "*"
-  source_address_prefix         = "*"
-  destination_address_prefix    = "*"
-  resource_group_name           = "${var.resource_group}"
-  network_security_group_name   = "${azurerm_network_security_group.mirror_nsg.name}"
-}
-
 resource "azurerm_network_security_rule" "mirror_nsg_ssh" {
-  count                         = "${var.ssh_vm_allowed}"
-  priority                      = 160
+  count                         = "${length(var.mirror_distribution) * ((length(var.ssh_vm_address_prefix) != 0) ? 1 : 0)}"
+  priority                      = 150
   name                          = "SSH"
   direction                     = "Inbound"
   access                        = "Allow"
   protocol                      = "Tcp"
-  source_port_range             = "22"
-  destination_port_range        = "*"
-  source_address_prefix         = "${var.ssh_vm_address_prefix}"
+  source_port_range             = "*"
+  destination_port_range        = "22"
+  source_address_prefixes       = "${values(var.ssh_vm_address_prefix)}"
   destination_address_prefix    = "*"
   resource_group_name           = "${var.resource_group}"
-  network_security_group_name   = "${azurerm_network_security_group.mirror_nsg.name}"
+  network_security_group_name   = "${azurerm_network_security_group.mirror_nsg.*.name[count.index]}"
 }
 
 resource "azurerm_network_security_rule" "mirror_nsg_http" {
+  count                         = "${length(var.mirror_distribution)}"
   priority                      = 170
   name                          = "HTTP"
   direction                     = "Inbound"
   access                        = "Allow"
   protocol                      = "Tcp"
-  source_port_range             = "80"
-  destination_port_range        = "*"
+  source_port_range             = "*"
+  destination_port_range        = "80"
   source_address_prefix         = "*"
   destination_address_prefix    = "*"
   resource_group_name           = "${var.resource_group}"
-  network_security_group_name   = "${azurerm_network_security_group.mirror_nsg.name}"
+  network_security_group_name   = "${azurerm_network_security_group.mirror_nsg.*.name[count.index]}"
 }
 
 resource "azurerm_network_security_rule" "mirror_nsg_https" {
+  count                         = "${length(var.mirror_distribution)}"
   priority                      = 171
   name                          = "HTTPS"
   direction                     = "Inbound"
   access                        = "Allow"
   protocol                      = "Tcp"
-  source_port_range             = "443"
-  destination_port_range        = "*"
+  source_port_range             = "*"
+  destination_port_range        = "443"
   source_address_prefix         = "*"
   destination_address_prefix    = "*"
   resource_group_name           = "${var.resource_group}"
-  network_security_group_name   = "${azurerm_network_security_group.mirror_nsg.name}"
+  network_security_group_name   = "${azurerm_network_security_group.mirror_nsg.*.name[count.index]}"
 }
 
 resource "azurerm_network_security_rule" "mirror_nsg_gerrit_ssh" {
+  count                         = "${length(var.mirror_distribution)}"
   priority                      = 180
   name                          = "Gerrit_SSH"
   direction                     = "Inbound"
   access                        = "Allow"
   protocol                      = "Tcp"
-  source_port_range             = "29418"
-  destination_port_range        = "*"
+  source_port_range             = "*"
+  destination_port_range        = "29418"
   source_address_prefix         = "*"
   destination_address_prefix    = "*"
   resource_group_name           = "${var.resource_group}"
-  network_security_group_name   = "${azurerm_network_security_group.mirror_nsg.name}"
+  network_security_group_name   = "${azurerm_network_security_group.mirror_nsg.*.name[count.index]}"
 }
 
 resource "azurerm_network_security_rule" "mirror_nsg_git_sync_ssh" {
+  count                         = "${length(var.mirror_distribution)}"
   priority                      = 190
-  name                          = "Git Sync SSH"
+  name                          = "Git-Sync_SSH"
   direction                     = "Inbound"
   access                        = "Allow"
   protocol                      = "Tcp"
-  source_port_range             = "22022"
-  destination_port_range        = "*"
+  source_port_range             = "*"
+  destination_port_range        = "22022"
   source_address_prefix         = "${azurerm_public_ip.public_ip.ip_address}"
   destination_address_prefix    = "*"
   resource_group_name           = "${var.resource_group}"
-  network_security_group_name   = "${azurerm_network_security_group.mirror_nsg.name}"
+  network_security_group_name   = "${azurerm_network_security_group.mirror_nsg.*.name[count.index]}"
 }
 

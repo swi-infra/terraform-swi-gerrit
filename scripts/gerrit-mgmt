@@ -26,17 +26,16 @@ if docker inspect --type container gerrit; then
     docker rm --volumes gerrit || true
 fi
 
-docker pull ${GERRIT_DOCKER_IMAGE}
-
-# Migrate from old location
-if [ -e "/lstorage/services/gerrit/cache" ]; then
-    mkdir -p /lstorage/services/gerrit/review_site
-    mv /lstorage/services/gerrit/{etc,cache,index,plugins,logs,db,events-db,static} \
-       /lstorage/services/gerrit/review_site
-fi
+docker pull "${GERRIT_DOCKER_IMAGE}"
 
 # Create directories to store Gerrit files
-mkdir -p /lstorage/services/gerrit/review_site/{etc,cache,index,plugins,logs,db,events-db,static}
+mkdir -p /lstorage/services/gerrit/{review_site,.ssh}/
+# Migrate from old location
+if [ -e "/lstorage/services/gerrit/etc" ]; then
+    mv /lstorage/services/gerrit/{etc,cache,index,plugins,logs,db,events-db,static} /lstorage/services/gerrit/review_site/
+fi
+
+chown -R 1000:1000 /lstorage/services/gerrit/{review_site,.ssh}/
 
 # Generate private keys used for Gerrit SSH server
 KEY_COMMENT="gerrit-code-review@$(hostname)"
@@ -69,6 +68,7 @@ set_env() {
 }
 
 set_env JAVA_HEAPLIMIT "8g"
+set_env WEBURL "https://${HOST_HOSTNAME}"
 
 DOCKER_RUN_ARGS="--publish 29418:29418"
 
@@ -84,11 +84,28 @@ if [[ "$GERRIT_ROLE" == "master" ]]; then
 
         set_env LETSENCRYPT_HOST "${HOST_HOSTNAME}"
     fi
-
-    set_env WEBURL "https://${HOST_HOSTNAME}"
     set_env HTTPD_LISTENURL "proxy-https://*:8080"
 
-    set_env GET_PLUGINS "high-availability,avatars-gravatar:master-master"
+    set_env GET_PLUGINS "high-availability,avatars-gravatar:master-master,replication"
+
+    if [ -n "$GERRIT_MIRROR_IPS" ]; then
+        # SSH configuration for replication
+        tee /lstorage/services/gerrit/.ssh/config <<SshConfig
+Host *
+    IdentityFile /var/gerrit/review_site/etc/ssh_host_rsa_key
+    Port 22022
+SshConfig
+
+        rm -f /lstorage/services/gerrit/.ssh/known_hosts
+        touch /lstorage/services/gerrit/.ssh/known_hosts
+
+        for mirror in $(echo $GERRIT_MIRROR_IPS | tr ',' ' '); do
+            # Accept host key
+            ssh-keyscan -p 22022 -t rsa $mirror >> /lstorage/services/gerrit/.ssh/known_hosts
+
+            # TODO: Update replication file
+        done
+    fi
 
 elif [[ "$GERRIT_ROLE" == "mirror" ]]; then
 
@@ -112,7 +129,8 @@ docker run \
             --volume /lstorage/services/gerrit/ssh_host_rsa_key:/var/gerrit/ssh_host_rsa_key \
             --volume /lstorage/services/gerrit/ssh_host_dsa_key:/var/gerrit/ssh_host_dsa_key \
             --volume /lstorage/services/gerrit/ssh_host_ecdsa_key:/var/gerrit/ssh_host_ecdsa_key \
-            --volume /lstorage/services/gerrit/review_site:/var/gerrit/review_site \
+            --volume /lstorage/services/gerrit/review_site/:/var/gerrit/review_site/ \
+            --volume /lstorage/services/gerrit/.ssh/:/var/gerrit/.ssh/ \
             --volume /lstorage/git:/var/gerrit/review_site/git \
             ${GERRIT_DOCKER_IMAGE}
 
