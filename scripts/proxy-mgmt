@@ -14,6 +14,8 @@ if [ -z "$SERVICE" ]; then
     exit 1
 fi
 
+NGINX_IMAGE="${NGINX_IMAGE:-nginx:stable-alpine}"
+
 start_service() {
     local service=$1
 
@@ -21,15 +23,15 @@ start_service() {
 
     SERVICE_NETWORK=${SERVICE_NETWORK:-gerrit}
 
-    docker network create ${SERVICE_NETWORK} || true
+    docker network create "${SERVICE_NETWORK}" || true
 
     if [[ "$service" == "nginx-proxy" ]]; then
         docker pull jwilder/nginx-proxy
 
         docker run \
-                    --name $SERVICE \
+                    --name "$SERVICE" \
                     --rm \
-                    --net ${SERVICE_NETWORK} \
+                    --net "${SERVICE_NETWORK}" \
                     -p 80:80 \
                     -p 443:443 \
                     --volume /lstorage/services/nginx/certs:/etc/nginx/certs:ro \
@@ -44,36 +46,37 @@ start_service() {
         docker pull jrcs/letsencrypt-nginx-proxy-companion
 
         docker run \
-                    --name $SERVICE \
+                    --name "$SERVICE" \
                     --rm \
-                    --net ${SERVICE_NETWORK} \
+                    --net "${SERVICE_NETWORK}" \
                     --volume /lstorage/services/nginx/certs:/etc/nginx/certs:rw \
                     --volume /var/run/docker.sock:/var/run/docker.sock:ro \
                     --volumes-from nginx-proxy \
                     jrcs/letsencrypt-nginx-proxy-companion
 
     elif [[ "$service" == "nginx-master-redir" ]]; then
-        docker pull nginx:alpine
+        docker pull "${NGINX_IMAGE}"
 
         tee /tmp/nginx-master-redir.conf <<NginxConf
 server {
     listen 80 default_server;
     access_log /var/log/nginx/access.log;
-    return 301 https://${HOST_HOSTNAME}$request_uri;
+    return 301 https://${HOST_HOSTNAME}\$request_uri;
 }
 NginxConf
 
         docker run \
-                    --name $SERVICE \
+                    --name "$SERVICE" \
                     --rm \
-                    --net ${SERVICE_NETWORK} \
+                    --net "${SERVICE_NETWORK}" \
                     --env VIRTUAL_HOST="master.${HOST_HOSTNAME}" \
                     --env LETSENCRYPT_HOST="master.${HOST_HOSTNAME}" \
                     --volume /tmp/nginx-master-redir.conf:/etc/nginx/vhost.d/redir.conf:ro \
-                    nginx:alpine
+                    "${NGINX_IMAGE}"
 
     elif [[ "$service" == "nginx-passthrough" ]]; then
-        docker pull nginx:alpine
+
+        docker pull "${NGINX_IMAGE}"
 
         tee /tmp/nginx-passthrough.conf <<NginxConf
 user  nginx;
@@ -87,34 +90,34 @@ events {
 }
 
 stream {
-        upstream master-http {
-                server ${MASTER_HOSTNAME}:80;
-        }
+    upstream master-http {
+        server ${MASTER_HOSTNAME}:80;
+    }
 
-        server {
-                listen 80;
-                proxy_pass master-http;
-        }
+    server {
+        listen 80;
+        proxy_pass master-http;
+    }
 
-        upstream master-https {
-                server ${MASTER_HOSTNAME}:443;
-        }
+    upstream master-https {
+        server ${MASTER_HOSTNAME}:443;
+    }
 
-        server {
-                listen 443;
-                proxy_pass master-https;
-        }
+    server {
+        listen 443;
+        proxy_pass master-https;
+    }
 }
 NginxConf
 
         docker run \
-                    --name $SERVICE \
+                    --name "$SERVICE" \
                     --rm \
-                    --net ${SERVICE_NETWORK} \
+                    --net "${SERVICE_NETWORK}" \
                     -p 80:80 \
                     -p 443:443 \
                     --volume /tmp/nginx-passthrough.conf:/etc/nginx/nginx.conf:ro \
-                    nginx:alpine
+                    "${NGINX_IMAGE}"
 
     else
         exit 1
@@ -123,10 +126,10 @@ NginxConf
 
 case "$1" in
     start)
-        start_service $SERVICE
+        start_service "$SERVICE"
         ;;
     stop)
-        docker kill $SERVICE
+        docker kill "$SERVICE"
         ;;
     restart)
         $0 stop
