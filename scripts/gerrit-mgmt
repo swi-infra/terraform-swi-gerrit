@@ -86,7 +86,7 @@ if [[ "$GERRIT_ROLE" == "master" ]]; then
     fi
     set_env HTTPD_LISTENURL "proxy-https://*:8080"
 
-    set_env GET_PLUGINS "high-availability,avatars-gravatar:master-master,replication"
+    set_env GET_PLUGINS "high-availability,avatars-gravatar,replication"
 
     if [ -n "$GERRIT_MIRROR_IPS" ]; then
         # SSH configuration for replication
