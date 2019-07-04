@@ -115,7 +115,7 @@ write_files:
     owner: root
     content: |
       TRANSFER_TIMEOUT=20 m
-      SSHD_IDLETIMEOUT=1 m
+      SSHD_IDLETIMEOUT=10 m
       SSHD_WAITTIMEOUT=20 m
       DATABASE_TYPE=postgresql
       DATABASE_HOSTNAME=${master_hostname}
