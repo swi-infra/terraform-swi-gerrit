@@ -133,17 +133,17 @@ variable "ssh_vm_address_prefix" {
 
 variable "image_publisher" {
   description = "name of the publisher of the image (az vm image list)"
-  default     = "CoreOS"
+  default     = "kinvolk"
 }
 
 variable "image_offer" {
   description = "the name of the offer (az vm image list)"
-  default     = "CoreOS"
+  default     = "flatcar-container-linux-free"
 }
 
 variable "image_sku" {
   description = "image sku to apply (az vm image list)"
-  default     = "Stable"
+  default     = "stable"
 }
 
 variable "image_version" {

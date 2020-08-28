@@ -75,6 +75,12 @@ resource "azurerm_virtual_machine" "mirror" {
     version   = "${var.image_version}"
   }
 
+  plan {
+    name      = var.image_sku
+    publisher = var.image_publisher
+    product   = var.image_offer
+  }
+
   storage_os_disk {
     name              = "${var.env_prefix}mirror${count.index}-osdisk"
     managed_disk_type = "Standard_LRS"
