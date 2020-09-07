@@ -22,7 +22,7 @@ variable "data_disk_size_gb" {
 
 variable "load_balancer" {
   description = "Provide a load balancer between master VM(s) and external interface or not"
-  default = true
+  default = false
 }
 
 variable "master_nb" {
@@ -72,19 +72,19 @@ variable "location" {
 
 variable "mirror_distribution" {
   description = "location of the gerrit mirror"
-  type = "list"
+  type = list(string)
   default = ["westus2"]
 }
 
 variable "mirror_locations" {
   description = "location of the gerrit mirror"
-  type = "list"
+  type = list(string)
   default = ["westus2"]
 }
 
 variable "mirror_ip_domains" {
   description = "Domain name associated with the public IP for mirror VMs"
-  type = "list"
+  type = list(string)
   default = []
 }
 
@@ -97,12 +97,12 @@ variable "master_platform_fault_domain_count" {
 }
 
 variable "mirror_platform_update_domain_count" {
-  type = "list"
+  type = list(string)
   default = ["2"]
 }
 
 variable "mirror_platform_fault_domain_count" {
-  type = "list"
+  type = list(string)
   default = ["2"]
 }
 
@@ -117,7 +117,7 @@ variable "subnet" {
 }
 
 variable "subnet_id" {
-  type        = "map"
+  type        = map(string)
   default     = {
     "westeurope" = "/subscriptions/xxxx/resourceGroups/xxxx/providers/Microsoft.Network/virtualNetworks/xxx/subnets/gerrit-subnet"
     "westus2"    = "/subscriptions/xxxx/resourceGroups/xxxx/providers/Microsoft.Network/virtualNetworks/xxx/subnets/gerrit-subnet"
@@ -125,7 +125,7 @@ variable "subnet_id" {
 }
 
 variable "ssh_vm_address_prefix" {
-  type        = "map"
+  type        = map(string)
   default     = {}
 }
 

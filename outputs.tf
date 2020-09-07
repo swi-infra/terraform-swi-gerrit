@@ -1,22 +1,21 @@
 ## Output
 
-output "master.ips" {
+output "master_ips" {
   value = "${azurerm_network_interface.master_nic.*.private_ip_address}"
 }
 
-output "mirror.ips" {
+output "mirror_ips" {
   value = "${azurerm_network_interface.mirror_nic.*.private_ip_address}"
 }
 
-output "external.master.ips" {
-  value = "${element(concat(azurerm_public_ip.public_ip.*.ip_address,
-                            azurerm_lb.lb_private.*.private_ip_address), 0)}"
+output "external_master_ips" {
+  value = "${azurerm_public_ip.public_ip.*.ip_address}"
 }
 
-output "external.mirror.ips" {
+output "external_mirror_ips" {
   value = "${azurerm_public_ip.mirror_public_ip.*.ip_address}"
 }
 
-output "dev.ip" {
+output "dev_ip" {
   value = "${azurerm_network_interface.dev_nic.*.private_ip_address}"
 }
