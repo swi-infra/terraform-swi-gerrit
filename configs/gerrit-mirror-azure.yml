@@ -11,16 +11,27 @@ coreos:
       content: |
         [Unit]
         Description=Configuration scripts
-        Requires=network-online.target
-        After=network-online.target
+        Requires=network-online.target docker.service
+        After=docker.service git-daemon.service
 
         [Service]
         EnvironmentFile=/etc/farm-environment
-        Type=oneshot
         RemainAfterExit=yes
         ExecStartPre=/usr/bin/rm -rf /tmp/tf-module
-        ExecStart=/usr/bin/git clone --depth 1 $${CONFIG_URL} /tmp/tf-module
+        ExecStartPre=-/usr/bin/docker rm -f %p
+        ExecStartPre=-/usr/bin/docker pull quay.io/swi-infra/git-autoupdate
+        ExecStartPre=/usr/bin/git clone --depth 1 $${CONFIG_URL} /tmp/tf-module
+        ExecStart=/usr/bin/docker run \
+                                      --name %p \
+                                      -e GIT_URL=$${CONFIG_URL} \
+                                      -e VOLUME_PATH=/tf-module \
+                                      -v /tmp/tf-module:/tf-module \
+                                      quay.io/swi-infra/git-autoupdate
+        ExecStop=/usr/bin/docker kill %p
+        Restart=always
+        RestartSec=10s
         TimeoutStartSec=0
+        TimeoutStopSec=15
     - name: data-storage.service
       command: start
       content: |
